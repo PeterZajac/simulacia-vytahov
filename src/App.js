@@ -5,11 +5,13 @@ import RequestForm from "./components/RequestForm";
 import Building from "./components/Building";
 import StatsChart from "./components/StatsChart";
 import SimulationControls from "./components/SimulationControls";
-import { assignElevator } from "./utils/fuzzyLogic";
+import { assignElevatorFuzzy } from "./utils/fuzzyLogic";
 
 const NUM_FLOORS = 10;
 const NUM_ELEVATORS = 3;
 export const MAX_CAPACITY = 8;
+const ELEVATOR_SPEED = 2; // m/s
+const FLOOR_HEIGHT = 3; // m
 
 const App = () => {
   const [elevators, setElevators] = useState(() => {
@@ -21,6 +23,9 @@ const App = () => {
         queue: [],
         busy: false,
         stats: 0,
+        avgWaitTime: 0,
+        totalWaitTime: 0,
+        lastRequestTime: Date.now(),
       });
     }
     return arr;
@@ -33,7 +38,14 @@ const App = () => {
 
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+  const calculateDistance = (from, to) => Math.abs(from - to) * FLOOR_HEIGHT;
+  const calculateTime = (distance) => distance / ELEVATOR_SPEED;
+
   const animateElevatorMovement = async (elevatorIndex, targetFloor) => {
+    const startTime = Date.now();
+    const startFloor = elevatorsRef.current[elevatorIndex].currentFloor;
+    const distance = calculateDistance(startFloor, targetFloor);
+
     while (true) {
       const currentFloor = elevatorsRef.current[elevatorIndex].currentFloor;
       if (currentFloor === targetFloor) break;
@@ -46,27 +58,32 @@ const App = () => {
         };
         return newElevators;
       });
-      console.log(
-        `Výťah ${elevatorIndex} sa posúva z ${currentFloor} na ${
-          currentFloor + direction
-        }`
-      );
       await sleep(500);
     }
+
+    const endTime = Date.now();
+    const actualTime = (endTime - startTime) / 1000;
+    const speed = distance / actualTime;
+
+    setElevators((prev) => {
+      const newElevators = [...prev];
+      newElevators[elevatorIndex] = {
+        ...newElevators[elevatorIndex],
+        avgSpeed: speed,
+      };
+      return newElevators;
+    });
   };
 
   const processNextRequest = async (elevatorIndex) => {
     const elevator = elevatorsRef.current[elevatorIndex];
     if (!elevator || elevator.queue.length === 0) {
-      console.log(`Výťah ${elevatorIndex} nemá žiadnu požiadavku`);
       return;
     }
-    // Ak je už výťah označený ako busy, nebudeme ho spúšťať znovu.
     if (elevator.busy) {
-      console.log(`Výťah ${elevatorIndex} je už spracovávaný.`);
       return;
     }
-    // Nastav busy na true okamžite v referencii aj vo vnútri stavu
+
     elevator.busy = true;
     setElevators((prev) => {
       const newElevators = [...prev];
@@ -78,10 +95,11 @@ const App = () => {
     });
 
     const currentRequest = elevator.queue[0];
-    console.log(
-      `Výťah ${elevatorIndex} spracováva požiadavku:`,
-      currentRequest
+    const distance = calculateDistance(
+      elevator.currentFloor,
+      currentRequest.from
     );
+    const waitTime = calculateTime(distance);
 
     await animateElevatorMovement(elevatorIndex, currentRequest.from);
     await sleep(500);
@@ -91,21 +109,20 @@ const App = () => {
     setElevators((prev) => {
       const newElevators = [...prev];
       const updatedQueue = newElevators[elevatorIndex].queue.slice(1);
-      // Po spracovaní požiadavky nastavíme busy na false a aktualizujeme štatistiky
       newElevators[elevatorIndex] = {
         ...newElevators[elevatorIndex],
         queue: updatedQueue,
         busy: false,
         stats: newElevators[elevatorIndex].stats + 1,
+        totalWaitTime: newElevators[elevatorIndex].totalWaitTime + waitTime,
+        avgWaitTime:
+          (newElevators[elevatorIndex].totalWaitTime + waitTime) /
+          (newElevators[elevatorIndex].stats + 1),
+        lastRequestTime: Date.now(),
       };
-      // Aktualizujeme aj referenciu
       elevatorsRef.current[elevatorIndex] = newElevators[elevatorIndex];
       return newElevators;
     });
-    console.log(
-      `Výťah ${elevatorIndex} dokončil požiadavku. Zostávajúca fronta:`,
-      elevatorsRef.current[elevatorIndex].queue
-    );
 
     if (elevatorsRef.current[elevatorIndex].queue.length > 0) {
       processNextRequest(elevatorIndex);
@@ -117,8 +134,9 @@ const App = () => {
       alert(`Maximálny počet ľudí vo výťahu je ${MAX_CAPACITY}.`);
       return;
     }
-    console.log("Pridávame požiadavku:", request);
-    const index = assignElevator(elevatorsRef.current, request);
+
+    const index = assignElevatorFuzzy(elevatorsRef.current, request);
+
     setElevators((prev) => {
       const newElevators = [...prev];
       newElevators[index] = {
@@ -127,14 +145,13 @@ const App = () => {
       };
       return newElevators;
     });
-    console.log(`Priradená požiadavka výťahu ${index}`);
+
     if (!elevatorsRef.current[index].busy) {
       processNextRequest(index);
     }
   };
 
   const startSimulation = () => {
-    console.log("Simulácia sa spúšťa manuálne");
     elevatorsRef.current.forEach((elevator, index) => {
       if (!elevator.busy && elevator.queue.length > 0) {
         processNextRequest(index);
@@ -143,7 +160,6 @@ const App = () => {
   };
 
   const resetSimulation = () => {
-    console.log("Resetovanie simulácie");
     const resetElevators = [];
     for (let i = 0; i < NUM_ELEVATORS; i++) {
       resetElevators.push({
@@ -152,6 +168,9 @@ const App = () => {
         queue: [],
         busy: false,
         stats: 0,
+        avgWaitTime: 0,
+        totalWaitTime: 0,
+        lastRequestTime: Date.now(),
       });
     }
     setElevators(resetElevators);
