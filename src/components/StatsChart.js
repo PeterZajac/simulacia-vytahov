@@ -33,7 +33,7 @@ const StatsChart = ({ elevators }) => {
       },
       {
         name: "Priemerný čas čakania",
-        value: avgWaitTime.toFixed(1),
+        value: avgWaitTime.toFixed(1) * 10,
         unit: "s",
       },
       {
