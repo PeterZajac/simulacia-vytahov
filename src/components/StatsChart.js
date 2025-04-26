@@ -2,36 +2,55 @@ import React, { useRef, useEffect } from "react";
 import * as d3 from "d3";
 
 // Importujeme konštantu definovanú v App.js
-import { REAL_TIME_FACTOR } from "../constants";
 
-const StatsChart = ({ elevators }) => {
+const StatsChart = ({ elevators = [], stats = {} }) => {
   const chartRef = useRef(null);
 
   useEffect(() => {
-    // Výpočet celkových štatistík
-    const totalRequests = elevators.reduce(
-      (sum, elevator) => sum + elevator.stats,
+    // Zabezpečíme, že elevators je pole
+    const safeElevators = Array.isArray(elevators) ? elevators : [];
+
+    // Výpočet celkových štatistík s ochranou pred chýbajúcimi hodnotami
+    const totalRequests = safeElevators.reduce(
+      (sum, elevator) => sum + (elevator.stats || 0),
       0
     );
-    const totalWaitTime = elevators.reduce(
-      (sum, elevator) => sum + elevator.totalWaitTime,
-      0
-    );
-    const avgWaitTime = totalRequests > 0 ? totalWaitTime / totalRequests : 0;
-    const totalQueueLength = elevators.reduce(
-      (sum, elevator) => sum + elevator.queue.length,
-      0
-    );
-    const totalPeople = elevators.reduce(
-      (sum, elevator) =>
-        sum + elevator.queue.reduce((people, req) => people + req.people, 0),
+    const totalWaitTime = safeElevators.reduce(
+      (sum, elevator) => sum + (elevator.totalWaitTime || 0),
       0
     );
 
-    // Reálnejší prepočet času čakania
-    // Priemerný čas čakania na výťah v realite je cca 20-60 sekúnd v závislosti od výšky budovy
-    // Použijeme konverznú konštantu: simulačný čas * REAL_TIME_FACTOR = reálny čas
-    const realAvgWaitTime = avgWaitTime * REAL_TIME_FACTOR;
+    // Priemerný čas čakania berieme priamo zo stats pre konzistenciu s ComparisonStats
+    let avgWaitTime = 0;
+
+    if (stats && stats.fuzzy && typeof stats.fuzzy.avgWaitTime === "number") {
+      // Ak máme platné stats, použijeme hodnotu z nich
+      avgWaitTime = stats.fuzzy.avgWaitTime;
+    } else if (totalRequests > 0) {
+      // Ak nemáme stats, použijeme vlastný výpočet (len ako fallback)
+      avgWaitTime = totalWaitTime / totalRequests;
+    }
+
+    const totalQueueLength = safeElevators.reduce(
+      (sum, elevator) =>
+        sum + (Array.isArray(elevator.queue) ? elevator.queue.length : 0),
+      0
+    );
+    const totalPeople = safeElevators.reduce(
+      (sum, elevator) =>
+        sum +
+        (Array.isArray(elevator.queue)
+          ? elevator.queue.reduce(
+              (people, req) => people + (req?.people || 0),
+              0
+            )
+          : 0),
+      0
+    );
+
+    // REÁLNE HODNOTY - už neaplikujeme REAL_TIME_FACTOR
+    // pretože hodnota avgWaitTime už obsahuje REAL_TIME_FACTOR
+    const realAvgWaitTime = avgWaitTime;
 
     const data = [
       {
@@ -41,7 +60,7 @@ const StatsChart = ({ elevators }) => {
       },
       {
         name: "Priemerný čas čakania",
-        value: realAvgWaitTime.toFixed(1), // Bez násobenia 10 ako predtým
+        value: realAvgWaitTime.toFixed(1),
         unit: "s",
       },
       {
@@ -70,7 +89,7 @@ const StatsChart = ({ elevators }) => {
 
     const x = d3
       .scaleLinear()
-      .domain([0, d3.max(data, (d) => d.value)])
+      .domain([0, d3.max(data, (d) => d.value) || 1]) // Ochrana pred prázdnymi dátami
       .range([margin.left, width - margin.right]);
 
     const y = d3
@@ -134,7 +153,7 @@ const StatsChart = ({ elevators }) => {
       .attr("font-size", "14px")
       .attr("font-weight", "bold")
       .text("Celkové štatistiky výťahového systému");
-  }, [elevators]);
+  }, [elevators, stats]);
 
   return (
     <div>

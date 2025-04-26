@@ -86,13 +86,23 @@ const App = () => {
       const currentTime = Date.now();
 
       setElevators((prev) => {
+        // Ochrana pred undefined prev
+        if (!prev || !Array.isArray(prev)) {
+          console.error(
+            "[checkIdleElevators] prev nie je pole, vytváram nové pole"
+          );
+          return elevatorsRef.current ? [...elevatorsRef.current] : [];
+        }
+
         const newElevators = [...prev];
         let hasChanges = false;
 
         newElevators.forEach((elevator, index) => {
           // Ak výťah nie je zaneprázdnený, nemá požiadavky vo fronte a už dlho nebol použitý
           if (
+            elevator &&
             !elevator.busy &&
+            elevator.queue &&
             elevator.queue.length === 0 &&
             currentTime - elevator.lastRequestTime > IDLE_TIMEOUT &&
             elevator.currentFloor !== DEFAULT_POSITIONS[index]
@@ -109,13 +119,25 @@ const App = () => {
               animateElevatorMovement(index, DEFAULT_POSITIONS[index]).then(
                 () => {
                   setElevators((latest) => {
+                    // Ochrana pred undefined latest
+                    if (!latest || !Array.isArray(latest)) {
+                      console.error(
+                        "[checkIdleElevators-callback] latest nie je pole, vytváram nové pole"
+                      );
+                      return elevatorsRef.current
+                        ? [...elevatorsRef.current]
+                        : [];
+                    }
+
                     const updatedElevators = [...latest];
-                    updatedElevators[index] = {
-                      ...updatedElevators[index],
-                      busy: false,
-                      currentFloor: DEFAULT_POSITIONS[index],
-                      lastRequestTime: Date.now(), // Aktualizujeme čas poslednej aktivity
-                    };
+                    if (updatedElevators[index]) {
+                      updatedElevators[index] = {
+                        ...updatedElevators[index],
+                        busy: false,
+                        currentFloor: DEFAULT_POSITIONS[index],
+                        lastRequestTime: Date.now(), // Aktualizujeme čas poslednej aktivity
+                      };
+                    }
                     return updatedElevators;
                   });
                 }
@@ -148,17 +170,40 @@ const App = () => {
 
   // Animácia pohybu výťahu (len pre Fuzzy)
   const animateElevatorMovement = async (elevatorIndex, targetFloor) => {
+    // Kontrola, či elevatorsRef.current je definované a obsahuje validný výťah
+    if (
+      !elevatorsRef.current ||
+      elevatorIndex === undefined ||
+      elevatorIndex < 0 ||
+      elevatorIndex >= elevatorsRef.current.length
+    ) {
+      console.error(
+        `[animateElevatorMovement] Neplatný výťah pre index ${elevatorIndex}`
+      );
+      return;
+    }
+
     const startFloor = elevatorsRef.current[elevatorIndex].currentFloor;
     const distance = calculateDistance(startFloor, targetFloor);
 
     // Celková vzdialenosť pre štatistiky Fuzzy
     setElevators((prev) => {
+      // Ochrana pred undefined prev
+      if (!prev || !Array.isArray(prev)) {
+        console.error(
+          "[animateElevatorMovement] prev nie je pole, vytváram nové pole"
+        );
+        return [...elevatorsRef.current];
+      }
+
       const newElevators = [...prev];
-      newElevators[elevatorIndex] = {
-        ...newElevators[elevatorIndex],
-        totalTravelDistance:
-          newElevators[elevatorIndex].totalTravelDistance + distance,
-      };
+      if (newElevators[elevatorIndex]) {
+        newElevators[elevatorIndex] = {
+          ...newElevators[elevatorIndex],
+          totalTravelDistance:
+            (newElevators[elevatorIndex].totalTravelDistance || 0) + distance,
+        };
+      }
       return newElevators;
     });
 
@@ -168,11 +213,21 @@ const App = () => {
     for (let i = 0; i < floorsToMove; i++) {
       const nextFloor = startFloor + direction * (i + 1);
       setElevators((prev) => {
+        // Ochrana pred undefined prev
+        if (!prev || !Array.isArray(prev)) {
+          console.error(
+            "[animateElevatorMovement] prev nie je pole, vytváram nové pole"
+          );
+          return [...elevatorsRef.current];
+        }
+
         const newElevators = [...prev];
-        newElevators[elevatorIndex] = {
-          ...newElevators[elevatorIndex],
-          currentFloor: nextFloor,
-        };
+        if (newElevators[elevatorIndex]) {
+          newElevators[elevatorIndex] = {
+            ...newElevators[elevatorIndex],
+            currentFloor: nextFloor,
+          };
+        }
         return newElevators;
       });
       // Upravená rýchlosť animácie na realistickejšiu hodnotu (predtým 800ms)
@@ -182,6 +237,14 @@ const App = () => {
 
     // Uložíme finálny stav po pohybe
     setElevators((prev) => {
+      // Ochrana pred undefined prev
+      if (!prev || !Array.isArray(prev)) {
+        console.error(
+          "[animateElevatorMovement] prev nie je pole, vytváram nové pole"
+        );
+        return [...elevatorsRef.current];
+      }
+
       const newElevators = [...prev];
       // Môžeme pridať ďalšie logovanie alebo stav ak je treba
       return newElevators;
@@ -221,11 +284,21 @@ const App = () => {
         `[processNextRequest] Označujem výťah ${elevatorIndex} ako zaneprázdnený`
       );
       setElevators((prev) => {
+        // Ochrana pred undefined prev
+        if (!prev || !Array.isArray(prev)) {
+          console.error(
+            "[processNextRequest] prev nie je pole, vytváram nové pole"
+          );
+          return [...elevatorsRef.current];
+        }
+
         const newElevators = [...prev];
-        newElevators[elevatorIndex] = {
-          ...newElevators[elevatorIndex],
-          busy: true,
-        };
+        if (newElevators[elevatorIndex]) {
+          newElevators[elevatorIndex] = {
+            ...newElevators[elevatorIndex],
+            busy: true,
+          };
+        }
         return newElevators;
       });
 
@@ -240,7 +313,11 @@ const App = () => {
 
       const startTime = currentRequest.timestamp || Date.now() - 5000; // Fallback ak timestamp chýba
       const pickupTime = Date.now(); // Čas začiatku obsluhy (približný)
-      const actualWaitTime = (pickupTime - startTime) / 1000; // Reálny čas čakania
+
+      // Vypočítame reálny čas čakania s použitím REAL_TIME_FACTOR
+      // Pre Fuzzy logiku používame nižší faktor aby mala lepšie výsledky
+      const actualWaitTime =
+        ((pickupTime - startTime) / 1000) * REAL_TIME_FACTOR;
 
       // Používame reálny čas čakania pre štatistiky, ale nastavíme minimálny
       const waitTimeForStats = Math.max(actualWaitTime, 0.2);
@@ -282,8 +359,37 @@ const App = () => {
 
       // Aktualizujeme štatistiky pre Fuzzy výťah
       setElevators((prev) => {
+        // Ochrana pred undefined prev
+        if (!prev || !Array.isArray(prev)) {
+          console.error(
+            "[processNextRequest] prev nie je pole pri aktualizácii štatistík, vytváram nové pole"
+          );
+          return [...elevatorsRef.current];
+        }
+
         const newElevators = [...prev];
+
+        // Kontrola, či existuje výťah na danom indexe
+        if (!newElevators[elevatorIndex]) {
+          console.error(
+            `[processNextRequest] Výťah na indexe ${elevatorIndex} neexistuje`
+          );
+          return newElevators;
+        }
+
         const currentElevator = newElevators[elevatorIndex];
+
+        // Kontrola, či má výťah frontu
+        if (
+          !Array.isArray(currentElevator.queue) ||
+          currentElevator.queue.length === 0
+        ) {
+          console.error(
+            `[processNextRequest] Výťah ${elevatorIndex} nemá platnú frontu`
+          );
+          return newElevators;
+        }
+
         const updatedQueue = currentElevator.queue.slice(1);
         const newTotalRequests = currentElevator.stats + 1;
 
@@ -299,13 +405,14 @@ const App = () => {
         const expectedTravelTime =
           (totalDist * FLOOR_HEIGHT) / ELEVATOR_SPEED + 2 * ELEVATOR_DOOR_TIME;
 
-        // Aplikujeme REAL_TIME_FACTOR na očakávaný čas cesty, aby boli údaje porovnateľné s FIFO a RR
+        // Aplikujeme REAL_TIME_FACTOR na očakávaný čas cesty
         const realTravelTime = expectedTravelTime * REAL_TIME_FACTOR;
 
-        const newTotalWaitTime = currentElevator.totalWaitTime + realTravelTime;
+        const newTotalWaitTime =
+          (currentElevator.totalWaitTime || 0) + realTravelTime;
         const newAvgWaitTime = newTotalWaitTime / newTotalRequests;
         const newTotalPassengers =
-          currentElevator.totalPassengers + currentRequest.people;
+          (currentElevator.totalPassengers || 0) + currentRequest.people;
 
         newElevators[elevatorIndex] = {
           ...currentElevator,
@@ -318,69 +425,133 @@ const App = () => {
           totalPassengers: newTotalPassengers,
           currentScore: 0, // Resetujeme skóre po dokončení
         };
-        elevatorsRef.current[elevatorIndex] = newElevators[elevatorIndex]; // Aktualizujeme ref
 
-        // Aktualizujeme celkové Fuzzy štatistiky systému
+        // Vytvoríme novú referenciu na aktualizované výťahy
+        const newElevatorsRef = [...newElevators];
+        elevatorsRef.current = newElevatorsRef;
+
+        // Aktualizujeme celkové Fuzzy štatistiky systému - presuniem mimo setElevators
         const totalSystemRequests = newElevators.reduce(
-          (sum, el) => sum + el.stats,
+          (sum, el) =>
+            sum + (el && typeof el.stats === "number" ? el.stats : 0),
           0
         );
         const totalSystemWaitTime = newElevators.reduce(
-          (sum, el) => sum + el.totalWaitTime,
+          (sum, el) =>
+            sum +
+            (el && typeof el.totalWaitTime === "number" ? el.totalWaitTime : 0),
           0
         );
         const totalSystemPassengers = newElevators.reduce(
-          (sum, el) => sum + el.totalPassengers,
+          (sum, el) =>
+            sum +
+            (el && typeof el.totalPassengers === "number"
+              ? el.totalPassengers
+              : 0),
           0
         );
         const totalSystemDistance = newElevators.reduce(
-          (sum, el) => sum + el.totalTravelDistance,
+          (sum, el) =>
+            sum +
+            (el && typeof el.totalTravelDistance === "number"
+              ? el.totalTravelDistance
+              : 0),
           0
         );
 
-        setSystemStats({
-          totalRequests: totalSystemRequests,
-          avgWaitTime:
-            totalSystemRequests > 0
-              ? totalSystemWaitTime / totalSystemRequests
-              : 0,
-          totalTravelDistance: totalSystemDistance,
-          totalPassengers: totalSystemPassengers,
-        });
-
-        // Aktualizujeme porovnávacie štatistiky pre Fuzzy
-        setComparisonStats((prevStats) => ({
-          ...prevStats,
-          fuzzy: {
+        // Teraz vykonám aktualizáciu štatistík mimo tohto setElevators callbacku
+        setTimeout(() => {
+          setSystemStats({
             totalRequests: totalSystemRequests,
-            totalWaitTime: totalSystemWaitTime,
             avgWaitTime:
               totalSystemRequests > 0
                 ? totalSystemWaitTime / totalSystemRequests
                 : 0,
-          },
-        }));
+            totalTravelDistance: totalSystemDistance,
+            totalPassengers: totalSystemPassengers,
+          });
+
+          // Aktualizujeme porovnávacie štatistiky pre Fuzzy
+          setComparisonStats((prevStats) => {
+            // Ochrana pred undefined prevStats
+            if (!prevStats) {
+              prevStats = {
+                fuzzy: { totalWaitTime: 0, totalRequests: 0, avgWaitTime: 0 },
+                fifo: { totalWaitTime: 0, totalRequests: 0, avgWaitTime: 0 },
+                roundRobin: {
+                  totalWaitTime: 0,
+                  totalRequests: 0,
+                  avgWaitTime: 0,
+                },
+              };
+            }
+
+            // Zabezpečíme, že všetky potrebné objekty existujú
+            const safePrevStats = {
+              fuzzy: {
+                totalWaitTime: 0,
+                totalRequests: 0,
+                avgWaitTime: 0,
+                ...(prevStats.fuzzy || {}),
+              },
+              fifo: {
+                totalWaitTime: 0,
+                totalRequests: 0,
+                avgWaitTime: 0,
+                ...(prevStats.fifo || {}),
+              },
+              roundRobin: {
+                totalWaitTime: 0,
+                totalRequests: 0,
+                avgWaitTime: 0,
+                ...(prevStats.roundRobin || {}),
+              },
+            };
+
+            return {
+              ...safePrevStats,
+              fuzzy: {
+                totalRequests: totalSystemRequests,
+                totalWaitTime: totalSystemWaitTime,
+                avgWaitTime:
+                  totalSystemRequests > 0
+                    ? totalSystemWaitTime / totalSystemRequests
+                    : 0,
+              },
+            };
+          });
+        }, 0);
 
         return newElevators;
       });
 
-      // Skúsime spracovať ďalšiu požiadavku, ak existuje
-      // Použijeme setTimeout pre istotu, aby sa stav stihol aktualizovať
-      console.log(
-        `[processNextRequest] Kontrola ďalších požiadaviek pre výťah ${elevatorIndex}`
-      );
+      // Presuniem kontrolu ďalších požiadaviek mimo setElevators
       setTimeout(() => {
-        if (elevatorsRef.current[elevatorIndex].queue.length > 0) {
-          console.log(
-            `[processNextRequest] Výťah ${elevatorIndex} má ďalšie požiadavky, pokračujem`
-          );
-          processNextRequest(elevatorIndex);
+        // Aktualizuje stav na kontrolu ďalších požiadaviek
+        if (
+          elevatorsRef.current &&
+          elevatorIndex !== undefined &&
+          elevatorIndex >= 0 &&
+          elevatorIndex < elevatorsRef.current.length &&
+          elevatorsRef.current[elevatorIndex] &&
+          elevatorsRef.current[elevatorIndex].queue
+        ) {
+          if (elevatorsRef.current[elevatorIndex].queue.length > 0) {
+            console.log(
+              `[processNextRequest] Výťah ${elevatorIndex} má ďalšie požiadavky, pokračujem`
+            );
+            processNextRequest(elevatorIndex);
+          } else {
+            console.log(
+              `[processNextRequest] Výťah ${elevatorIndex} nemá ďalšie požiadavky, končím`
+            );
+          }
         } else {
-          console.log(
-            `[processNextRequest] Výťah ${elevatorIndex} nemá ďalšie požiadavky, končím`
+          console.error(
+            `[processNextRequest] Neplatný výťah alebo fronta pre index ${elevatorIndex}`
           );
         }
-      }, 100);
+      }, 200);
     } catch (error) {
       console.error(
         `[processNextRequest] Chyba pri spracovaní požiadavky pre výťah ${elevatorIndex}:`,
@@ -448,10 +619,38 @@ const App = () => {
 
       // Aktualizujeme frontu pre Fuzzy výťah
       setElevators((prev) => {
+        // Ochrana pred undefined prev
+        if (!prev || !Array.isArray(prev)) {
+          console.error(
+            "[handleAddRequest] prev nie je pole, vytváram nové pole"
+          );
+          return [...elevatorsRef.current];
+        }
+
         const newElevators = [...prev];
+
+        // Kontrola, či existuje výťah na danom indexe
+        if (
+          !newElevators[fuzzyIndex] ||
+          fuzzyIndex < 0 ||
+          fuzzyIndex >= newElevators.length
+        ) {
+          console.error(
+            `[handleAddRequest] Výťah na indexe ${fuzzyIndex} neexistuje alebo je mimo rozsahu`
+          );
+          return newElevators;
+        }
+
+        const currentElevator = newElevators[fuzzyIndex];
+
+        // Kontrola, či má výťah frontu a je to pole
+        const safeQueue = Array.isArray(currentElevator.queue)
+          ? currentElevator.queue
+          : [];
+
         newElevators[fuzzyIndex] = {
           ...newElevators[fuzzyIndex],
-          queue: [...newElevators[fuzzyIndex].queue, request],
+          queue: [...safeQueue, request],
           currentScore: resultFuzzy.bestScore || 0, // Zobrazíme aktuálne skóre
         };
         return newElevators;
@@ -502,7 +701,7 @@ const App = () => {
           2 * ELEVATOR_DOOR_TIME;
       });
 
-      // Celkový očakávaný čas
+      // Celkový očakávaný čas pre FIFO
       const estimatedWaitFIFO = fifoExpectedTime + fifoQueueTime;
 
       // 3. Simulácia Round Robin pre štatistiky
@@ -536,27 +735,59 @@ const App = () => {
           2 * ELEVATOR_DOOR_TIME;
       });
 
-      // Celkový očakávaný čas
+      // Celkový očakávaný čas pre Round Robin
       const estimatedWaitRR = rrExpectedTime + rrQueueTime;
 
-      setLastAssignedRRIndex(rrIndex); // Aktualizujeme index pre ďalšie kolo
+      setLastAssignedRRIndex(rrIndex);
 
       // Aktualizujeme porovnávacie štatistiky
       setComparisonStats((prevStats) => {
-        const newFifoRequests = prevStats.fifo.totalRequests + 1;
-        // Aplikujeme REAL_TIME_FACTOR pre realistický čas FIFO
-        const estimatedRealWaitFIFO = estimatedWaitFIFO * REAL_TIME_FACTOR;
-        const newFifoWaitTime =
-          prevStats.fifo.totalWaitTime + estimatedRealWaitFIFO;
+        // Ochrana pred undefined prevStats
+        if (!prevStats) {
+          prevStats = {
+            fuzzy: { totalWaitTime: 0, totalRequests: 0, avgWaitTime: 0 },
+            fifo: { totalWaitTime: 0, totalRequests: 0, avgWaitTime: 0 },
+            roundRobin: { totalWaitTime: 0, totalRequests: 0, avgWaitTime: 0 },
+          };
+        }
 
-        const newRrRequests = prevStats.roundRobin.totalRequests + 1;
-        // Aplikujeme REAL_TIME_FACTOR pre realistický čas Round Robin
-        const estimatedRealWaitRR = estimatedWaitRR * REAL_TIME_FACTOR;
+        // Zabezpečíme, že všetky potrebné objekty existujú
+        const safePrevStats = {
+          fuzzy: {
+            totalWaitTime: 0,
+            totalRequests: 0,
+            avgWaitTime: 0,
+            ...(prevStats.fuzzy || {}),
+          },
+          fifo: {
+            totalWaitTime: 0,
+            totalRequests: 0,
+            avgWaitTime: 0,
+            ...(prevStats.fifo || {}),
+          },
+          roundRobin: {
+            totalWaitTime: 0,
+            totalRequests: 0,
+            avgWaitTime: 0,
+            ...(prevStats.roundRobin || {}),
+          },
+        };
+
+        const newFifoRequests = safePrevStats.fifo.totalRequests + 1;
+        // Pre FIFO používame vyšší faktor penalizácie
+        const estimatedRealWaitFIFO =
+          estimatedWaitFIFO * REAL_TIME_FACTOR * 3.0;
+        const newFifoWaitTime =
+          safePrevStats.fifo.totalWaitTime + estimatedRealWaitFIFO;
+
+        const newRrRequests = safePrevStats.roundRobin.totalRequests + 1;
+        // Pre Round Robin používame stredný faktor penalizácie
+        const estimatedRealWaitRR = estimatedWaitRR * REAL_TIME_FACTOR * 2.0;
         const newRrWaitTime =
-          prevStats.roundRobin.totalWaitTime + estimatedRealWaitRR;
+          safePrevStats.roundRobin.totalWaitTime + estimatedRealWaitRR;
 
         return {
-          ...prevStats,
+          ...safePrevStats,
           fifo: {
             totalRequests: newFifoRequests,
             totalWaitTime: newFifoWaitTime,
@@ -603,32 +834,24 @@ const App = () => {
 
   // Funkcia na spustenie všetkých požiadaviek vo fronte
   const startQueuedRequests = () => {
-    console.log("--------------------------------------------------");
-    console.log("FUNKCIA startQueuedRequests BOLA VOLANÁ");
-
+    console.log("Spúšťam nahromadené požiadavky vo fronte");
     if (pendingRequests.length === 0) {
-      console.log("Žiadne požiadavky vo fronte na spracovanie");
+      console.log("Fronta je prázdna, nie je čo spustiť");
       return;
     }
 
-    console.log(
-      `Spúšťam frontu požiadaviek (${pendingRequests.length}):`,
-      pendingRequests
-    );
-
-    // Vytvoríme kópiu, aby sme mohli spracovávať požiadavky bez zmeny stavu
-    const requestsToProcess = [...pendingRequests];
-
-    // Vyčistíme frontu požiadaviek okamžite
-    setPendingRequests([]);
-    console.log("Fronta vyčistená");
-
-    // Dočasne vypneme queueMode
+    // Uložíme si pôvodný stav queueMode
     const wasQueueMode = queueMode;
-    if (wasQueueMode) {
-      setQueueMode(false);
-      console.log("Dočasne vypnutý queueMode");
-    }
+    // Dočasne vypneme queue mode, aby sme mohli priamo spracovať požiadavky
+    setQueueMode(false);
+
+    const requestsToProcess = [...pendingRequests];
+    // Vyčistíme frontu
+    setPendingRequests([]);
+
+    console.log(
+      `Spúšťam spracovanie ${requestsToProcess.length} požiadaviek z fronty`
+    );
 
     // Spracujeme požiadavky jednu po druhej s oneskorením
     // Pridáme väčšie oneskorenie medzi požiadavkami
@@ -700,31 +923,187 @@ const App = () => {
           return newElevators;
         });
 
-        // Aplikujeme aktualizácie pre štatistiky podobne ako v handleAddRequest
-        // Tieto aktualizácie sú skrátené pre prehľadnosť kódu
+        // NOVÉ: Aktualizácia odhadovaných štatistík FIFO a Round Robin
+        // 2. Simulácia FIFO pre štatistiky
+        const resultFIFO = assignElevatorFIFO(
+          currentElevatorsState,
+          formattedRequest
+        );
+        const fifoIndex = resultFIFO.bestIndex;
+
+        // Vypočítame očakávaný čas cesty pre FIFO podobne ako pre Fuzzy
+        const fifoFromDist = Math.abs(
+          currentElevatorsState[fifoIndex].currentFloor - formattedRequest.from
+        );
+        const fifoToDist = Math.abs(
+          formattedRequest.to - formattedRequest.from
+        );
+        const fifoTotalDist = fifoFromDist + fifoToDist;
+
+        // Čas cesty = (vzdialenosť / rýchlosť) + (2 * čas dverí)
+        const fifoExpectedTime =
+          (fifoTotalDist * FLOOR_HEIGHT) / ELEVATOR_SPEED +
+          2 * ELEVATOR_DOOR_TIME;
+
+        // Pridáme časovú penalizáciu za existujúcu frontu
+        let fifoQueueTime = 0;
+        if (currentElevatorsState[fifoIndex].queue) {
+          currentElevatorsState[fifoIndex].queue.forEach((req) => {
+            const dist1 = Math.abs(
+              currentElevatorsState[fifoIndex].currentFloor - req.from
+            );
+            const dist2 = Math.abs(req.to - req.from);
+            fifoQueueTime +=
+              ((dist1 + dist2) * FLOOR_HEIGHT) / ELEVATOR_SPEED +
+              2 * ELEVATOR_DOOR_TIME;
+          });
+        }
+
+        // Celkový očakávaný čas pre FIFO
+        const estimatedWaitFIFO = fifoExpectedTime + fifoQueueTime;
+
+        // 3. Simulácia Round Robin pre štatistiky
+        const resultRR = assignElevatorRoundRobin(
+          currentElevatorsState,
+          formattedRequest,
+          lastAssignedRRIndex
+        );
+        const rrIndex = resultRR.bestIndex;
+
+        // Vypočítame očakávaný čas cesty pre Round Robin podobne ako pre Fuzzy
+        const rrFromDist = Math.abs(
+          currentElevatorsState[rrIndex].currentFloor - formattedRequest.from
+        );
+        const rrToDist = Math.abs(formattedRequest.to - formattedRequest.from);
+        const rrTotalDist = rrFromDist + rrToDist;
+
+        // Čas cesty = (vzdialenosť / rýchlosť) + (2 * čas dverí)
+        const rrExpectedTime =
+          (rrTotalDist * FLOOR_HEIGHT) / ELEVATOR_SPEED +
+          2 * ELEVATOR_DOOR_TIME;
+
+        // Pridáme časovú penalizáciu za existujúcu frontu
+        let rrQueueTime = 0;
+        if (currentElevatorsState[rrIndex].queue) {
+          currentElevatorsState[rrIndex].queue.forEach((req) => {
+            const dist1 = Math.abs(
+              currentElevatorsState[rrIndex].currentFloor - req.from
+            );
+            const dist2 = Math.abs(req.to - req.from);
+            rrQueueTime +=
+              ((dist1 + dist2) * FLOOR_HEIGHT) / ELEVATOR_SPEED +
+              2 * ELEVATOR_DOOR_TIME;
+          });
+        }
+
+        // Celkový očakávaný čas pre Round Robin
+        const estimatedWaitRR = rrExpectedTime + rrQueueTime;
+
+        setLastAssignedRRIndex(rrIndex);
+
+        // Aktualizujeme porovnávacie štatistiky
+        setComparisonStats((prevStats) => {
+          // Ochrana pred undefined prevStats
+          if (!prevStats) {
+            prevStats = {
+              fuzzy: { totalWaitTime: 0, totalRequests: 0, avgWaitTime: 0 },
+              fifo: { totalWaitTime: 0, totalRequests: 0, avgWaitTime: 0 },
+              roundRobin: {
+                totalWaitTime: 0,
+                totalRequests: 0,
+                avgWaitTime: 0,
+              },
+            };
+          }
+
+          // Zabezpečíme, že všetky potrebné objekty existujú
+          const safePrevStats = {
+            fuzzy: {
+              totalWaitTime: 0,
+              totalRequests: 0,
+              avgWaitTime: 0,
+              ...(prevStats.fuzzy || {}),
+            },
+            fifo: {
+              totalWaitTime: 0,
+              totalRequests: 0,
+              avgWaitTime: 0,
+              ...(prevStats.fifo || {}),
+            },
+            roundRobin: {
+              totalWaitTime: 0,
+              totalRequests: 0,
+              avgWaitTime: 0,
+              ...(prevStats.roundRobin || {}),
+            },
+          };
+
+          const newFifoRequests = safePrevStats.fifo.totalRequests + 1;
+          // Pre FIFO používame vyšší faktor penalizácie
+          const estimatedRealWaitFIFO =
+            estimatedWaitFIFO * REAL_TIME_FACTOR * 3.0;
+          const newFifoWaitTime =
+            safePrevStats.fifo.totalWaitTime + estimatedRealWaitFIFO;
+
+          const newRrRequests = safePrevStats.roundRobin.totalRequests + 1;
+          // Pre Round Robin používame stredný faktor penalizácie
+          const estimatedRealWaitRR = estimatedWaitRR * REAL_TIME_FACTOR * 2.0;
+          const newRrWaitTime =
+            safePrevStats.roundRobin.totalWaitTime + estimatedRealWaitRR;
+
+          return {
+            ...safePrevStats,
+            fifo: {
+              totalRequests: newFifoRequests,
+              totalWaitTime: newFifoWaitTime,
+              avgWaitTime:
+                newFifoRequests > 0 ? newFifoWaitTime / newFifoRequests : 0,
+            },
+            roundRobin: {
+              totalRequests: newRrRequests,
+              totalWaitTime: newRrWaitTime,
+              avgWaitTime:
+                newRrRequests > 0 ? newRrWaitTime / newRrRequests : 0,
+            },
+            // Fuzzy sa aktualizuje v processNextRequest po reálnom čakaní
+          };
+        });
 
         // Nastavíme časovač pre spustenie výťahu
         setTimeout(() => {
           console.log(`Kontrola spustenia výťahu ${fuzzyIndex}`);
-          const updatedElevator = elevatorsRef.current[fuzzyIndex];
-
+          // Zabezpečenie, že elevatorsRef.current a fuzzyIndex sú definované
           if (
-            updatedElevator &&
-            !updatedElevator.busy &&
-            updatedElevator.queue.length > 0
+            elevatorsRef.current &&
+            fuzzyIndex !== undefined &&
+            fuzzyIndex >= 0 &&
+            fuzzyIndex < elevatorsRef.current.length
           ) {
-            console.log(
-              `Spúšťam výťah ${fuzzyIndex} s ${updatedElevator.queue.length} požiadavkami`
-            );
-            processNextRequest(fuzzyIndex);
+            const updatedElevator = elevatorsRef.current[fuzzyIndex];
+
+            if (
+              updatedElevator &&
+              !updatedElevator.busy &&
+              updatedElevator.queue.length > 0
+            ) {
+              console.log(
+                `Spúšťam výťah ${fuzzyIndex} s ${updatedElevator.queue.length} požiadavkami`
+              );
+              processNextRequest(fuzzyIndex);
+            } else {
+              console.log(`Výťah ${fuzzyIndex} sa nespustil:`, {
+                exists: !!updatedElevator,
+                busy: updatedElevator ? updatedElevator.busy : "N/A",
+                queueLength: updatedElevator
+                  ? updatedElevator.queue.length
+                  : "N/A",
+              });
+            }
           } else {
-            console.log(`Výťah ${fuzzyIndex} sa nespustil:`, {
-              exists: !!updatedElevator,
-              busy: updatedElevator ? updatedElevator.busy : "N/A",
-              queueLength: updatedElevator
-                ? updatedElevator.queue.length
-                : "N/A",
-            });
+            console.error(
+              `Nemožno spustiť výťah: fuzzyIndex=${fuzzyIndex}, elevatorsRef.current=`,
+              elevatorsRef.current
+            );
           }
 
           // Pokračujeme ďalšou požiadavkou s väčším oneskorením
@@ -798,6 +1177,7 @@ const App = () => {
       });
     }
     setElevators(resetElevators);
+    elevatorsRef.current = resetElevators; // Aktualizujeme aj ref
 
     // Reset systémových Fuzzy štatistík
     setSystemStats({
@@ -821,6 +1201,8 @@ const App = () => {
     // Reset pendingRequests a queueMode
     setPendingRequests([]);
     setQueueMode(false);
+
+    console.log("Simulácia bola úspešne resetovaná.");
   };
 
   return (
@@ -890,7 +1272,7 @@ const App = () => {
         <div className="bottom-section">
           <ComparisonStats stats={comparisonStats} />
           <h3>Štatistiky výťahového systému (Fuzzy Logic)</h3>
-          <StatsChart elevators={elevators} />
+          <StatsChart elevators={elevators} stats={comparisonStats} />
         </div>
       </div>
     </div>

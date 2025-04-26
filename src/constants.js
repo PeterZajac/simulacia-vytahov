@@ -8,4 +8,5 @@ export const ELEVATOR_DOOR_TIME = 3; // s - čas na otvorenie dverí, nástup/v�
 
 // Konverzný faktor pre prepočet simulačného času na realistický
 // Použije sa pre všetky algoritmy, aby sa zachovala konzistencia v porovnaní
-export const REAL_TIME_FACTOR = 5; // simulačný čas * REAL_TIME_FACTOR = reálny čas
+// Nižšia hodnota pre realistickejšie časy
+export const REAL_TIME_FACTOR = 0.5;

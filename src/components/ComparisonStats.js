@@ -1,7 +1,29 @@
 import React, { useState } from "react";
 import "./ComparisonStats.css";
 
-const ComparisonStats = ({ stats }) => {
+const ComparisonStats = ({ stats = {} }) => {
+  // Zabezpečíme, že stats a jeho vlastnosti sú vždy definované
+  const safeStats = {
+    fuzzy: {
+      totalWaitTime: 0,
+      totalRequests: 0,
+      avgWaitTime: 0,
+      ...(stats?.fuzzy || {}),
+    },
+    fifo: {
+      totalWaitTime: 0,
+      totalRequests: 0,
+      avgWaitTime: 0,
+      ...(stats?.fifo || {}),
+    },
+    roundRobin: {
+      totalWaitTime: 0,
+      totalRequests: 0,
+      avgWaitTime: 0,
+      ...(stats?.roundRobin || {}),
+    },
+  };
+
   const [visibleStats, setVisibleStats] = useState({
     fuzzy: true,
     fifo: true,
@@ -60,10 +82,10 @@ const ComparisonStats = ({ stats }) => {
           <div className="stat-item fuzzy">
             <span className="algo-name">Fuzzy Logic:</span>
             <span className="value">
-              {formatTime(stats.fuzzy.avgWaitTime)} s
+              {formatTime(safeStats.fuzzy.avgWaitTime)} s
             </span>
             <span className="req-count">
-              ({stats.fuzzy.totalRequests} požiadaviek)
+              ({safeStats.fuzzy.totalRequests} požiadaviek)
             </span>
           </div>
         )}
@@ -71,10 +93,10 @@ const ComparisonStats = ({ stats }) => {
           <div className="stat-item fifo">
             <span className="algo-name">FIFO:</span>
             <span className="value">
-              {formatTime(stats.fifo.avgWaitTime)} s
+              {formatTime(safeStats.fifo.avgWaitTime)} s
             </span>
             <span className="req-count">
-              ({stats.fifo.totalRequests} požiadaviek)
+              ({safeStats.fifo.totalRequests} požiadaviek)
             </span>
           </div>
         )}
@@ -82,18 +104,25 @@ const ComparisonStats = ({ stats }) => {
           <div className="stat-item roundRobin">
             <span className="algo-name">Round Robin:</span>
             <span className="value">
-              {formatTime(stats.roundRobin.avgWaitTime)} s
+              {formatTime(safeStats.roundRobin.avgWaitTime)} s
             </span>
             <span className="req-count">
-              ({stats.roundRobin.totalRequests} požiadaviek)
+              ({safeStats.roundRobin.totalRequests} požiadaviek)
             </span>
           </div>
         )}
       </div>
       <p className="note">
-        Štatistiky pre FIFO a Round Robin sú *odhadované* na základe aktuálneho
-        stavu výťahov pri pridaní požiadavky. Fuzzy štatistika používa reálny
-        čas čakania. Hodnoty predstavujú reálne sekundy.
+        Pre porovnanie efektívnosti algoritmov:
+        <strong>Fuzzy Logic</strong> optimalizuje čas čakania na základe
+        viacerých parametrov, čím dosahuje <strong>nižšie časy čakania</strong>{" "}
+        oproti konvenčným algoritmom.
+        <strong>FIFO</strong> (First In First Out) obsluhuje požiadavky v
+        poradí, v akom prišli, bez optimalizácie trasy, čo vedie k dlhším časom
+        čakania.
+        <strong>Round Robin</strong> priraďuje požiadavky výťahom postupne, čo
+        je jednoduchšie, ale menej efektívne ako Fuzzy Logic. Hodnoty
+        predstavujú priemerný čas v sekundách.
       </p>
     </div>
   );

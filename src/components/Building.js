@@ -1,25 +1,50 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import FloorPanel from "./FloorPanel";
 import "./building.css";
 
-const Building = ({ numFloors, elevators, onCallElevator }) => {
+const Building = ({ numFloors, elevators = [], onCallElevator }) => {
   const floorHeight = 50;
   const [movingElevators, setMovingElevators] = useState({});
+  const movingElevatorsRef = useRef({});
 
-  // Sledovanie pohybu výťahov
+  // Sledovanie pohybu výťahov - upravený aby predišiel nekonečnej slučke
   useEffect(() => {
+    if (!Array.isArray(elevators)) return; // Ochrana pred undefined
+
+    // Vytvorím nové movingElevators len ak sa skutočne zmenilo
+    let shouldUpdate = false;
     const newMovingElevators = {};
+
     elevators.forEach((elevator) => {
-      if (elevator.busy) {
+      if (elevator && elevator.busy) {
         newMovingElevators[elevator.id] = true;
+        // Ak sa hodnota zmenila, označíme pre aktualizáciu
+        if (!movingElevatorsRef.current[elevator.id]) {
+          shouldUpdate = true;
+        }
+      } else if (elevator && movingElevatorsRef.current[elevator.id]) {
+        // Ak výťah už nie je zaneprázdnený, ale bol v predchádzajúcom stave
+        shouldUpdate = true;
       }
     });
-    setMovingElevators(newMovingElevators);
+
+    // Aktualizujeme stav len ak sa niečo zmenilo
+    if (shouldUpdate) {
+      setMovingElevators(newMovingElevators);
+      // Aktualizujeme aj referenciu
+      movingElevatorsRef.current = newMovingElevators;
+    }
   }, [elevators]);
 
   // Funkcia na určenie smeru pohybu výťahu
   const getElevatorDirection = (elevator) => {
-    if (!elevator.busy || elevator.queue.length === 0) return null;
+    if (
+      !elevator ||
+      !elevator.busy ||
+      !Array.isArray(elevator.queue) ||
+      elevator.queue.length === 0
+    )
+      return null;
 
     const currentRequest = elevator.queue[0];
     if (currentRequest.from !== elevator.currentFloor) {
@@ -33,7 +58,13 @@ const Building = ({ numFloors, elevators, onCallElevator }) => {
 
   // Funkcia na získanie informácie o cieli výťahu
   const getElevatorDestinationInfo = (elevator) => {
-    if (!elevator.busy || elevator.queue.length === 0) return null;
+    if (
+      !elevator ||
+      !elevator.busy ||
+      !Array.isArray(elevator.queue) ||
+      elevator.queue.length === 0
+    )
+      return null;
 
     const currentRequest = elevator.queue[0];
     if (currentRequest.from !== elevator.currentFloor) {
@@ -52,6 +83,9 @@ const Building = ({ numFloors, elevators, onCallElevator }) => {
       };
     }
   };
+
+  // Kontrola, či sú elevators definované
+  const safeElevators = Array.isArray(elevators) ? elevators : [];
 
   return (
     <div className="building-container">
@@ -81,7 +115,7 @@ const Building = ({ numFloors, elevators, onCallElevator }) => {
             const floorNumber = numFloors - i - 1;
 
             // Zistíme, či je na tomto poschodí nejaký výťah
-            const hasElevator = elevators.some(
+            const hasElevator = safeElevators.some(
               (e) => e.currentFloor === floorNumber
             );
 
@@ -117,9 +151,12 @@ const Building = ({ numFloors, elevators, onCallElevator }) => {
           })}
 
           <div className="shafts">
-            {elevators.map((elevator) => {
+            {safeElevators.map((elevator) => {
               // Zistime, či momentálne výťah smeruje k požiadavke
-              const hasDestination = elevator.queue.length > 0;
+              const hasDestination =
+                elevator.queue &&
+                Array.isArray(elevator.queue) &&
+                elevator.queue.length > 0;
               const currentDestination = hasDestination
                 ? elevator.queue[0]
                 : null;

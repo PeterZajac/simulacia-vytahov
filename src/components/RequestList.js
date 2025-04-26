@@ -6,15 +6,20 @@ const RequestList = ({
   pendingRequests = [],
   queueMode = false,
 }) => {
+  // Zabezpečíme, že pendingRequests je vždy definované ako pole
+  const safeRequests = Array.isArray(pendingRequests) ? pendingRequests : [];
+  // Zabezpečíme, že elevators je vždy definované ako pole
+  const safeElevators = Array.isArray(elevators) ? elevators : [];
+
   return (
     <div className="request-list">
       <h2>Aktuálne požiadavky</h2>
 
-      {queueMode && pendingRequests.length > 0 && (
+      {queueMode && safeRequests.length > 0 && (
         <div className="pending-requests">
           <h3>Čakajúce požiadavky v rade</h3>
           <ul>
-            {pendingRequests.map((request, index) => (
+            {safeRequests.map((request, index) => (
               <li key={index} className="pending-request">
                 Od: {request.from}, Na: {request.to}, Ľudia: {request.people}
               </li>
@@ -23,7 +28,7 @@ const RequestList = ({
         </div>
       )}
 
-      {elevators.map((elevator) => (
+      {safeElevators.map((elevator) => (
         <div key={elevator.id} className="elevator-info">
           <h3>Výťah E{elevator.id}</h3>
           {elevator.queue.length === 0 ? (
