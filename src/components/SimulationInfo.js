@@ -31,9 +31,17 @@ const SimulationInfo = () => {
                 ukazuje cieľové poschodie.
               </li>
               <li>
-                Výťahy sa po období nečinnosti automaticky presunú do
-                optimálnych východiskových polôh (prízemie, stred budovy,
-                najvyššie poschodie).
+                Výťahy sa po 10 sekundách nečinnosti automaticky presunú do
+                optimálnych východiskových polôh:
+                <ul>
+                  <li>Výťah 0 sa presunie na spodné poschodie (0)</li>
+                  <li>
+                    Výťah 1 sa presunie na stredné poschodie (polovica budovy)
+                  </li>
+                  <li>Výťah 2 sa presunie na horné poschodie</li>
+                </ul>
+                Toto zabezpečuje, že výťahy sú vždy v optimálnych pozíciách pre
+                rýchle obslúženie požiadaviek z rôznych častí budovy.
               </li>
             </ol>
           </div>
