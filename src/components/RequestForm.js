@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { MAX_CAPACITY } from "../App";
+import { MAX_CAPACITY } from "../constants";
 
 const RequestForm = ({ numFloors, onAddRequest }) => {
   const [from, setFrom] = useState(0);
@@ -13,14 +13,16 @@ const RequestForm = ({ numFloors, onAddRequest }) => {
       alert("Poschodie 'od' a 'na' nemôže byť rovnaké!");
       return;
     }
-    const request = {
-      from: parseInt(from, 10),
-      to: parseInt(to, 10),
-      people: parseInt(people, 10),
-      timestamp: Date.now(),
-    };
-    onAddRequest(request);
-    console.log("Pridaná požiadavka:", request);
+    const fromValue = parseInt(from, 10);
+    const toValue = parseInt(to, 10);
+    const peopleValue = parseInt(people, 10);
+
+    onAddRequest(fromValue, toValue, peopleValue);
+    console.log("Pridaná požiadavka:", {
+      from: fromValue,
+      to: toValue,
+      people: peopleValue,
+    });
   };
 
   return (

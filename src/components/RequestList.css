@@ -1,0 +1,133 @@
+.request-list {
+  margin: 20px 0;
+  padding: 15px;
+  background-color: #f9f9f9;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.request-list h2,
+.request-list h3,
+.request-list h4 {
+  margin-top: 0;
+  color: #333;
+}
+
+.elevator-info {
+  margin-bottom: 15px;
+  padding: 10px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.elevator-info h3 {
+  margin-top: 0;
+  font-size: 16px;
+  color: #444;
+}
+
+.elevator-info ul {
+  margin: 0;
+  padding: 0 0 0 20px;
+}
+
+.elevator-info li {
+  margin-bottom: 5px;
+}
+
+.last-assignment {
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: #e8f4fd;
+  border: 1px solid #bedcf3;
+  border-radius: 5px;
+}
+
+.score-details {
+  margin-top: 10px;
+}
+
+.score-details table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.score-details th,
+.score-details td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+.score-details th {
+  background-color: #f2f2f2;
+}
+
+.score-details ul {
+  margin: 0;
+  padding: 0 0 0 20px;
+  list-style-type: none;
+  font-size: 0.9em;
+}
+
+.score-details li {
+  margin-bottom: 3px;
+}
+
+.selected-elevator {
+  background-color: #dff0d8;
+}
+
+.score-explanation {
+  margin-bottom: 15px;
+  padding: 8px 12px;
+  background-color: #f4f4f4;
+  border-left: 4px solid #4285f4;
+  border-radius: 3px;
+}
+
+.score-badge {
+  margin-left: 10px;
+  padding: 2px 8px;
+  font-size: 14px;
+  background-color: #4285f4;
+  color: white;
+  border-radius: 10px;
+  font-weight: normal;
+}
+
+.no-score {
+  margin-left: 10px;
+  padding: 2px 8px;
+  font-size: 14px;
+  background-color: #e0e0e0;
+  color: #666;
+  border-radius: 10px;
+  font-weight: normal;
+}
+
+.pending-requests {
+  margin-bottom: 20px;
+  padding: 12px;
+  background-color: #fff8e1;
+  border: 1px solid #ffecb3;
+  border-radius: 4px;
+}
+
+.pending-requests h3 {
+  color: #ff9800;
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+
+.pending-requests ul {
+  margin: 0;
+  padding: 0 0 0 20px;
+}
+
+.pending-request {
+  margin-bottom: 6px;
+  padding: 4px 0;
+}

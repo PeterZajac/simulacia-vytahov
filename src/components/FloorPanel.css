@@ -1,0 +1,91 @@
+.floor-panel {
+  background-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 100%;
+  z-index: 100;
+}
+
+.floor-panel-controls {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.panel-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: rgba(240, 240, 240, 0.9);
+  padding: 4px 6px;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #ddd;
+}
+
+.people-control {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 12px;
+}
+
+.counter-button {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #ddd;
+  border: 1px solid #ccc;
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.counter-value {
+  width: 18px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.destination-select {
+  padding: 1px 2px;
+  font-size: 12px;
+  border-radius: 3px;
+  border: 1px solid #ccc;
+  background-color: white;
+  width: 45px;
+}
+
+.floor-panel button.call-button {
+  padding: 2px 6px;
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: bold;
+  transition: all 0.2s;
+}
+
+.floor-panel button.call-button:hover {
+  background-color: #c0392b;
+  transform: translateY(-1px);
+}
+
+.floor-panel button.call-button:active {
+  background-color: #a93226;
+  transform: translateY(1px);
+}
+
+@media (max-width: 768px) {
+  .panel-row {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+}

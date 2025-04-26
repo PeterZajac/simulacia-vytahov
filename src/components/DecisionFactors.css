@@ -1,0 +1,52 @@
+.decision-factors {
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  padding: 15px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  overflow-x: auto;
+}
+
+.decision-factors h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 16px;
+  color: #333;
+}
+
+.decision-details {
+  font-size: 14px;
+}
+
+.factors-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0;
+  font-size: 12px;
+  table-layout: fixed;
+}
+
+.factors-table th,
+.factors-table td {
+  border: 1px solid #ddd;
+  padding: 4px 2px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.factors-table th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+
+.factors-table .selected-row {
+  background-color: #e8f4fd;
+  font-weight: bold;
+}
+
+.factors-explanation {
+  margin-top: 10px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #666;
+}

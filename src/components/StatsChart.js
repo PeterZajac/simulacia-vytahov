@@ -1,6 +1,9 @@
 import React, { useRef, useEffect } from "react";
 import * as d3 from "d3";
 
+// Importujeme konštantu definovanú v App.js
+import { REAL_TIME_FACTOR } from "../constants";
+
 const StatsChart = ({ elevators }) => {
   const chartRef = useRef(null);
 
@@ -25,6 +28,11 @@ const StatsChart = ({ elevators }) => {
       0
     );
 
+    // Reálnejší prepočet času čakania
+    // Priemerný čas čakania na výťah v realite je cca 20-60 sekúnd v závislosti od výšky budovy
+    // Použijeme konverznú konštantu: simulačný čas * REAL_TIME_FACTOR = reálny čas
+    const realAvgWaitTime = avgWaitTime * REAL_TIME_FACTOR;
+
     const data = [
       {
         name: "Celkový počet požiadaviek",
@@ -33,7 +41,7 @@ const StatsChart = ({ elevators }) => {
       },
       {
         name: "Priemerný čas čakania",
-        value: avgWaitTime.toFixed(1) * 10,
+        value: realAvgWaitTime.toFixed(1), // Bez násobenia 10 ako predtým
         unit: "s",
       },
       {
