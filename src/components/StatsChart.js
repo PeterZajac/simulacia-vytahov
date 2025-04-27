@@ -1,16 +1,12 @@
 import React, { useRef, useEffect } from "react";
 import * as d3 from "d3";
 
-// Importujeme konštantu definovanú v App.js
-
 const StatsChart = ({ elevators = [], stats = {} }) => {
   const chartRef = useRef(null);
 
   useEffect(() => {
-    // Zabezpečíme, že elevators je pole
     const safeElevators = Array.isArray(elevators) ? elevators : [];
 
-    // Výpočet celkových štatistík s ochranou pred chýbajúcimi hodnotami
     const totalRequests = safeElevators.reduce(
       (sum, elevator) => sum + (elevator.stats || 0),
       0
@@ -20,14 +16,11 @@ const StatsChart = ({ elevators = [], stats = {} }) => {
       0
     );
 
-    // Priemerný čas čakania berieme priamo zo stats pre konzistenciu s ComparisonStats
     let avgWaitTime = 0;
 
     if (stats && stats.fuzzy && typeof stats.fuzzy.avgWaitTime === "number") {
-      // Ak máme platné stats, použijeme hodnotu z nich
       avgWaitTime = stats.fuzzy.avgWaitTime;
     } else if (totalRequests > 0) {
-      // Ak nemáme stats, použijeme vlastný výpočet (len ako fallback)
       avgWaitTime = totalWaitTime / totalRequests;
     }
 
@@ -48,8 +41,6 @@ const StatsChart = ({ elevators = [], stats = {} }) => {
       0
     );
 
-    // REÁLNE HODNOTY - už neaplikujeme REAL_TIME_FACTOR
-    // pretože hodnota avgWaitTime už obsahuje REAL_TIME_FACTOR
     const realAvgWaitTime = avgWaitTime;
 
     const data = [
@@ -89,7 +80,7 @@ const StatsChart = ({ elevators = [], stats = {} }) => {
 
     const x = d3
       .scaleLinear()
-      .domain([0, d3.max(data, (d) => d.value) || 1]) // Ochrana pred prázdnymi dátami
+      .domain([0, d3.max(data, (d) => d.value) || 1])
       .range([margin.left, width - margin.right]);
 
     const y = d3
@@ -109,7 +100,6 @@ const StatsChart = ({ elevators = [], stats = {} }) => {
       .attr("transform", `translate(${margin.left},0)`)
       .call(d3.axisLeft(y));
 
-    // Pridanie stĺpcov
     svg
       .append("g")
       .attr("fill", "steelblue")
@@ -121,7 +111,6 @@ const StatsChart = ({ elevators = [], stats = {} }) => {
       .attr("width", (d) => x(d.value) - margin.left)
       .attr("height", y.bandwidth());
 
-    // Pridanie hodnôt nad stĺpce
     svg
       .append("g")
       .attr("fill", "black")
@@ -135,7 +124,6 @@ const StatsChart = ({ elevators = [], stats = {} }) => {
       .attr("dy", "0.35em")
       .text((d) => `${d.value} ${d.unit}`);
 
-    // Pridanie popisov osí
     svg
       .append("text")
       .attr("x", width / 2)
@@ -144,7 +132,6 @@ const StatsChart = ({ elevators = [], stats = {} }) => {
       .attr("font-size", "12px")
       .text("Hodnoty");
 
-    // Pridanie nadpisu
     svg
       .append("text")
       .attr("x", width / 2)

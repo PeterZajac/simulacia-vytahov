@@ -9,7 +9,7 @@ const Building = ({ numFloors, elevators = [], onCallElevator }) => {
 
   // Sledovanie pohybu výťahov - upravený aby predišiel nekonečnej slučke
   useEffect(() => {
-    if (!Array.isArray(elevators)) return; // Ochrana pred undefined
+    if (!Array.isArray(elevators)) return;
 
     // Vytvorím nové movingElevators len ak sa skutočne zmenilo
     let shouldUpdate = false;
@@ -157,9 +157,7 @@ const Building = ({ numFloors, elevators = [], onCallElevator }) => {
                 elevator.queue &&
                 Array.isArray(elevator.queue) &&
                 elevator.queue.length > 0;
-              const currentDestination = hasDestination
-                ? elevator.queue[0]
-                : null;
+
               const elevatorDirection = getElevatorDirection(elevator);
               const isMoving = movingElevators[elevator.id];
               const destinationInfo = getElevatorDestinationInfo(elevator);

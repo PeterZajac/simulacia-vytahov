@@ -6,9 +6,7 @@ const RequestList = ({
   pendingRequests = [],
   queueMode = false,
 }) => {
-  // Zabezpečíme, že pendingRequests je vždy definované ako pole
   const safeRequests = Array.isArray(pendingRequests) ? pendingRequests : [];
-  // Zabezpečíme, že elevators je vždy definované ako pole
   const safeElevators = Array.isArray(elevators) ? elevators : [];
 
   return (

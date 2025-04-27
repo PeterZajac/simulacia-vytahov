@@ -3,10 +3,8 @@ import { MAX_CAPACITY } from "../constants";
 import "./FloorPanel.css";
 
 const FloorPanel = ({ floorNumber, numFloors, onCallElevator }) => {
-  // Prednastavená hodnota pre počet osôb na 1
   const [people, setPeople] = useState(1);
 
-  // Prednastavíme prvé možné odlišné poschodie ako cieľ
   const getDefaultDestination = () => {
     if (floorNumber === 0) return 1;
     return 0;

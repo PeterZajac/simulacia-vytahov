@@ -39,7 +39,6 @@ const ComparisonStats = ({ stats = {} }) => {
     if (isNaN(time) || !isFinite(time)) {
       return "0.00";
     }
-    // Už neaplikujeme REAL_TIME_FACTOR, pretože je aplikovaný v App.js
     return time.toFixed(2);
   };
 
