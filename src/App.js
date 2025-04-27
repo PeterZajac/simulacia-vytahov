@@ -155,7 +155,7 @@ const App = () => {
     const intervalId = setInterval(checkIdleElevators, 5000);
 
     return () => clearInterval(intervalId);
-  }, [NUM_FLOORS]);
+  }, [NUM_FLOORS, animateElevatorMovement]);
 
   // Celkové štatistiky systému (teraz len pre Fuzzy)
   const [systemStats, setSystemStats] = useState({

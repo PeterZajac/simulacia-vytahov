@@ -75,3 +75,61 @@ export function assignElevatorFuzzy(elevators, request) {
     bestScore,
   };
 }
+
+/**
+ * FIFO (First In, First Out) algoritmus pre výber výťahu
+ * Priraďuje požiadavku prvému dostupnému výťahu, alebo výťahu s najkratším
+ * počtom čakajúcich požiadaviek.
+ */
+export function assignElevatorFIFO(elevators, request) {
+  let bestIndex = 0;
+  let shortestQueue = Infinity;
+
+  // Nájdeme výťah s najmenším počtom požiadaviek
+  elevators.forEach((elevator, i) => {
+    if (elevator.queue.length < shortestQueue) {
+      shortestQueue = elevator.queue.length;
+      bestIndex = i;
+    }
+  });
+
+  // Vytvoríme správu o rozhodnutí
+  const decisionDetails = elevators.map((elevator, i) => ({
+    elevatorId: i,
+    queueLength: elevator.queue.length,
+    selected: i === bestIndex,
+  }));
+
+  return {
+    bestIndex,
+    scores: decisionDetails,
+    bestScore: shortestQueue,
+    decisionReason: `Výťah ${bestIndex} má najkratšiu frontu: ${shortestQueue} požiadaviek`,
+  };
+}
+
+/**
+ * Round Robin algoritmus pre výber výťahu
+ * Priraďuje požiadavky cyklicky medzi výťahy, bez ohľadu na ich obsadenosť alebo pozíciu.
+ */
+export function assignElevatorRoundRobin(
+  elevators,
+  request,
+  lastAssignedIndex
+) {
+  // V round robin algoritme jednoducho vyberieme ďalší výťah v rade
+  const bestIndex = (lastAssignedIndex + 1) % elevators.length;
+
+  // Vytvoríme správu o rozhodnutí
+  const decisionDetails = elevators.map((elevator, i) => ({
+    elevatorId: i,
+    selected: i === bestIndex,
+  }));
+
+  return {
+    bestIndex,
+    scores: decisionDetails,
+    bestScore: 0,
+    decisionReason: `Round Robin: Výťah ${bestIndex} vybratý ako ďalší v poradí`,
+  };
+}
