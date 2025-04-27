@@ -11,8 +11,10 @@ Tento dokument popisuje implementáciu a používanie simulácie výťahového s
 - Počet poschodí: 10
 - Počet výťahov: 3
 - Maximálna kapacita výťahu: 8 osôb
-- Rýchlosť výťahu: 2 m/s
+- Rýchlosť výťahu: 1.5 m/s
 - Výška poschodia: 3 m
+- Čas na otvorenie a zatvorenie dverí: 3 s
+- Realistický faktor času (REAL_TIME_FACTOR): 0.5
 
 ### 2.2 Technológie
 
@@ -26,29 +28,71 @@ Tento dokument popisuje implementáciu a používanie simulácie výťahového s
 
 1. **App.js** - Hlavná komponenta aplikácie
 
-   - Riadi stav simulácie
-   - Spracováva logiku výťahov
-   - Koordinuje komunikáciu medzi komponentami
+   - Riadi stav simulácie a životný cyklus výťahov
+   - Inicializácia a správa stavov výťahov a požiadaviek
+   - Spracovanie a priradenie požiadaviek pomocou algoritmov
+   - Animácia pohybu výťahov a aktualizácia ich stavu
+   - Spracovanie štatistík a metrík pre všetky algoritmy (Fuzzy, FIFO, Round Robin)
+   - Implementuje frontový režim pre hromadné spracovanie požiadaviek
+   - Umožňuje reset simulácie a automatický návrat výťahov do základných pozícií
 
 2. **Building.js** - Vizuálna reprezentácia budovy
 
-   - Zobrazuje poschodia
-   - Animuje pohyb výťahov
+   - Zobrazuje poschodia a šachty výťahov
+   - Animuje pohyb výťahov medzi poschodiami
+   - Zobrazuje aktuálny stav výťahov (voľný/zaneprázdnený)
+   - Ukazuje smer pohybu a cieľ výťahu
+   - Zobrazuje skóre výťahu (pre Fuzzy algoritmus)
+   - Integruje ovládacie panely na poschodiach (FloorPanel)
 
-3. **StatsChart.js** - Grafická reprezentácia štatistík
+3. **FloorPanel.js** - Ovládací panel na poschodí
 
-   - Zobrazuje celkové štatistiky systému
-   - Aktualizuje sa v reálnom čase
+   - Umožňuje volať výťah z každého poschodia
+   - Nastavovanie počtu osôb a cieľového poschodia
+   - Validácia vstupných parametrov
 
 4. **RequestForm.js** - Formulár pre pridávanie požiadaviek
 
-   - Umožňuje zadať parametre novej požiadavky
+   - Umožňuje zadať parametre novej požiadavky (poschodie, cieľ, počet osôb)
    - Validuje vstupné dáta
+   - Odosiela požiadavky na spracovanie hlavnej komponente
 
-5. **fuzzyLogic.js** - Implementácia algoritmu priradenia výťahov
-   - Obsahuje logiku rozhodovania o priradení požiadavky
+5. **RequestList.js** - Zoznam aktuálnych požiadaviek
 
-### 3.2 Štruktúra dát
+   - Zobrazuje zoznam požiadaviek vo fronte pre každý výťah
+   - Zobrazuje čakajúce požiadavky v režime fronty
+
+6. **StatsChart.js** - Grafická reprezentácia štatistík
+
+   - Vizualizuje celkové štatistiky systému pomocou D3.js
+   - Zobrazuje počet požiadaviek, priemerný čas čakania a ďalšie metriky
+   - Aktualizuje sa v reálnom čase na základe prevádzky výťahov
+   - Používa hodnoty z comparisonStats pre konzistentný priemerný čas čakania
+
+7. **ComparisonStats.js** - Porovnávacie štatistiky algoritmov
+
+   - Zobrazuje tabuľku s porovnaním algoritmu Fuzzy logiky s FIFO a Round Robin
+   - Umožňuje zapnúť/vypnúť zobrazenie jednotlivých algoritmov
+   - Zobrazuje priemerný čas čakania a počet požiadaviek pre každý algoritmus
+
+8. **DecisionFactors.js** - Detaily rozhodovania Fuzzy logiky
+
+   - Zobrazuje faktory, ktoré ovplyvnili výber výťahu pri poslednej požiadavke
+   - Zobrazuje skóre pre každý výťah a faktor
+
+9. **SimulationInfo.js** - Informácie o simulácii
+   - Poskytuje návod na používanie simulácie
+   - Vysvetľuje funkcionality a algoritmy
+
+### 3.2 Utilities
+
+1. **elevatorControllers.js** - Algoritmy pre priradenie výťahov
+   - Implementácia Fuzzy logiky pre priradenie výťahu
+   - Implementácia FIFO (First In, First Out) algoritmu
+   - Implementácia Round Robin algoritmu
+   - Výpočet rôznych faktorov pre Fuzzy logiku
+
+### 3.3 Štruktúra dát
 
 #### Požiadavka (Request)
 
@@ -72,7 +116,32 @@ Tento dokument popisuje implementáciu a používanie simulácie výťahového s
   stats: number,                 // Počet spracovaných požiadaviek
   avgWaitTime: number,           // Priemerný čas čakania
   totalWaitTime: number,         // Celkový čas čakania
-  lastRequestTime: number        // Čas poslednej požiadavky
+  lastRequestTime: number,       // Čas poslednej požiadavky
+  currentScore: number,          // Aktuálne fuzzy skóre
+  totalTravelDistance: number,   // Celková prejdená vzdialenosť
+  totalPassengers: number        // Celkový počet prepravených pasažierov
+}
+```
+
+#### Porovnávacie štatistiky (ComparisonStats)
+
+```javascript
+{
+  fuzzy: {
+    totalWaitTime: number,     // Celkový čas čakania pre Fuzzy
+    totalRequests: number,     // Celkový počet požiadaviek pre Fuzzy
+    avgWaitTime: number        // Priemerný čas čakania pre Fuzzy
+  },
+  fifo: {
+    totalWaitTime: number,     // Celkový čas čakania pre FIFO
+    totalRequests: number,     // Celkový počet požiadaviek pre FIFO
+    avgWaitTime: number        // Priemerný čas čakania pre FIFO
+  },
+  roundRobin: {
+    totalWaitTime: number,     // Celkový čas čakania pre Round Robin
+    totalRequests: number,     // Celkový počet požiadaviek pre Round Robin
+    avgWaitTime: number        // Priemerný čas čakania pre Round Robin
+  }
 }
 ```
 
@@ -140,9 +209,46 @@ score =
 
 Výťah s najnižším skóre je vybraný pre spracovanie požiadavky.
 
-## 5. Používanie simulácie
+## 5. Hlavné funkcionality v App.js
 
-### 5.1 Spustenie aplikácie
+### 5.1 Spracovanie požiadaviek
+
+- **handleAddRequest** - spracováva pridanie novej požiadavky
+
+  - Validuje požiadavku (počet osôb, poschodia)
+  - V režime fronty ukladá požiadavky do zoznamu pre neskoršie spracovanie
+  - Mimo režimu fronty priamo priradí požiadavku výťahu pomocou Fuzzy logiky
+  - Aktualizuje štatistiky pre Fuzzy, FIFO a Round Robin
+
+- **processNextRequest** - spracováva ďalšiu požiadavku vo fronte výťahu
+  - Animuje pohyb výťahu na poschodie nástupu
+  - Simuluje nastupovanie a vystupovanie (čakanie)
+  - Aktualizuje štatistiky po dokončení
+  - Rekurzívne spracováva ďalšie požiadavky vo fronte
+
+### 5.2 Režim fronty
+
+- **toggleQueueMode** - prepína medzi priamym priradením a frontovým režimom
+- **startQueuedRequests** - spúšťa spracovanie nahromadených požiadaviek vo fronte
+  - Postupne spracováva každú požiadavku
+  - Aktualizuje štatistiky pre všetky algoritmy
+  - Zabezpečuje správne plánovanie priradenia výťahov
+
+### 5.3 Pohyb výťahov
+
+- **animateElevatorMovement** - zabezpečuje animáciu pohybu výťahu medzi poschodiami
+  - Postupne aktualizuje aktuálne poschodie výťahu
+  - Počíta celkovú prejdenú vzdialenosť pre štatistiky
+
+### 5.4 Optimalizácia
+
+- Automatické vracanie výťahov do optimálnych východiskových pozícií
+- Ochrana pred chybovými stavmi a spracovanie hraničných prípadov
+- Konzistentné výpočty štatistík pre všetky algoritmy
+
+## 6. Používanie simulácie
+
+### 6.1 Spustenie aplikácie
 
 1. Nainštalujte závislosti:
    ```bash
@@ -154,31 +260,54 @@ Výťah s najnižším skóre je vybraný pre spracovanie požiadavky.
    ```
 3. Otvorte prehliadač na adrese `http://localhost:3000`
 
-### 5.2 Pridávanie požiadaviek
+### 6.2 Pridávanie požiadaviek
 
 1. Vyberte počiatočné poschodie v poli "Od poschodia"
 2. Vyberte cieľové poschodie v poli "Na poschodie"
 3. Zadajte počet ľudí (1-8)
 4. Kliknite na tlačidlo "Pridať požiadavku"
 
-### 5.3 Ovládanie simulácie
+Alebo:
 
-- **Spustiť simuláciu**: Kliknite na tlačidlo "Spustiť simuláciu"
-- **Resetovať simuláciu**: Kliknite na tlačidlo "Resetovať simuláciu"
-- **Pozastaviť simuláciu**: Zatvorte prehliadač alebo stlačte Ctrl+C v termináli
+1. Na ľubovoľnom poschodí v budove kliknite na ovládací panel
+2. Nastavte počet ľudí pomocou tlačidiel +/-
+3. Vyberte cieľové poschodie
+4. Kliknite na tlačidlo "Privolať"
 
-### 5.4 Sledovanie štatistík
+### 6.3 Ovládanie simulácie
 
-Graf zobrazuje nasledujúce metriky:
+- **Režim fronty**: Zapnite prepínač "Pridávať do fronty" pre zhromaždenie viacerých požiadaviek
+- **Spustiť frontu**: Kliknite na tlačidlo "Spustiť frontu" pre spustenie nahromadených požiadaviek
+- **Resetovať simuláciu**: Kliknite na tlačidlo "Resetovať simuláciu" pre obnovenie počiatočného stavu
 
-1. Celkový počet požiadaviek (ks)
-2. Priemerný čas čakania (s)
-3. Počet čakajúcich požiadaviek (ks)
-4. Celkový počet ľudí (osôb)
+### 6.4 Sledovanie štatistík
 
-## 6. Optimalizácia a vylepšenia
+- **Porovnávacie štatistiky** - zobrazujú priemerný čas čakania pre každý algoritmus
+- **Graf štatistík** - zobrazuje kľúčové metriky výťahového systému:
+  1. Celkový počet požiadaviek (ks)
+  2. Priemerný čas čakania (s)
+  3. Počet čakajúcich požiadaviek (ks)
+  4. Celkový počet ľudí (osôb)
 
-### 6.1 Možné vylepšenia
+## 7. Optimalizácia a vylepšenia
+
+### 7.1 Najnovšie vylepšenia
+
+1. Zjednotenie štatistík medzi StatsChart a ComparisonStats
+
+   - StatsChart teraz používa hodnoty z comparisonStats pre konzistentné zobrazenie
+   - Aktualizácia štatistík pre FIFO a Round Robin aj pri frontových požiadavkách
+
+2. Rozšírená ochranu pred chybami
+
+   - Kontrola existencie objektov a polí pred prístupom
+   - Ochrana pred spracovaním neplatných dát
+
+3. Vylepšená vizualizácia
+   - Zobrazovanie aktuálneho skóre výťahu
+   - Indikácia smeru pohybu a cieľa výťahu
+
+### 7.2 Možné vylepšenia
 
 1. Implementácia rôznych časových profilov (špička, mimošpička)
 2. Pridanie prioritných požiadaviek
@@ -186,18 +315,18 @@ Graf zobrazuje nasledujúce metriky:
 4. Implementácia prediktívneho modelu zaťaženia
 5. Pridanie možnosti nastavenia parametrov simulácie
 
-### 6.2 Limity systému
+### 7.3 Limity systému
 
 1. Maximálna kapacita výťahu je obmedzená na 8 osôb
-2. Simulácia neberie do úvahy čas potrebný na nastúpenie/vystúpenie
+2. Simulácia používa zjednodušený model pre čas dverí a nástup/výstup
 3. Výťahy sa pohybujú konštantnou rýchlosťou
 4. Systém nepodporuje prepravu nákladu
 
-## 7. Záver
+## 8. Záver
 
-Simulácia demonštruje efektívne využitie fuzzy logiky pre riadenie výťahového systému. Algoritmus zohľadňuje viacero faktorov pre optimalizáciu priradenia požiadaviek, čo vedie k lepšej distribúcii zaťaženia a kratším čakacím časom pre cestujúcich.
+Simulácia demonštruje efektívne využitie fuzzy logiky pre riadenie výťahového systému. Algoritmus zohľadňuje viacero faktorov pre optimalizáciu priradenia požiadaviek, čo vedie k lepšej distribúcii zaťaženia a kratším čakacím časom pre cestujúcich. Porovnanie s jednoduchšími algoritmami FIFO a Round Robin ukazuje výhody inteligentného rozhodovania pri riadení výťahov.
 
-## 8. Referencie
+## 9. Referencie
 
 1. React.js dokumentácia: https://reactjs.org/
 2. D3.js dokumentácia: https://d3js.org/
