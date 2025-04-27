@@ -155,15 +155,7 @@ const App = () => {
     const intervalId = setInterval(checkIdleElevators, 5000);
 
     return () => clearInterval(intervalId);
-  }, [NUM_FLOORS, animateElevatorMovement]);
-
-  // Celkové štatistiky systému (teraz len pre Fuzzy)
-  const [systemStats, setSystemStats] = useState({
-    totalRequests: 0,
-    avgWaitTime: 0,
-    totalTravelDistance: 0,
-    totalPassengers: 0,
-  });
+  }, [NUM_FLOORS]);
 
   // Helper funkcie
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -462,16 +454,6 @@ const App = () => {
 
         // Teraz vykonám aktualizáciu štatistík mimo tohto setElevators callbacku
         setTimeout(() => {
-          setSystemStats({
-            totalRequests: totalSystemRequests,
-            avgWaitTime:
-              totalSystemRequests > 0
-                ? totalSystemWaitTime / totalSystemRequests
-                : 0,
-            totalTravelDistance: totalSystemDistance,
-            totalPassengers: totalSystemPassengers,
-          });
-
           // Aktualizujeme porovnávacie štatistiky pre Fuzzy
           setComparisonStats((prevStats) => {
             // Ochrana pred undefined prevStats
@@ -800,6 +782,7 @@ const App = () => {
             totalWaitTime: newRrWaitTime,
             avgWaitTime: newRrRequests > 0 ? newRrWaitTime / newRrRequests : 0,
           },
+          // Fuzzy sa aktualizuje v processNextRequest po reálnom čakaní
         };
       });
     },
@@ -1172,14 +1155,6 @@ const App = () => {
     }
     setElevators(resetElevators);
     elevatorsRef.current = resetElevators; // Aktualizujeme aj ref
-
-    // Reset systémových Fuzzy štatistík
-    setSystemStats({
-      totalRequests: 0,
-      avgWaitTime: 0,
-      totalTravelDistance: 0,
-      totalPassengers: 0,
-    });
 
     // Reset porovnávacích štatistík
     setComparisonStats({
