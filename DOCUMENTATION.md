@@ -289,45 +289,6 @@ Alebo:
   3. Počet čakajúcich požiadaviek (ks)
   4. Celkový počet ľudí (osôb)
 
-## 7. Optimalizácia a vylepšenia
-
-### 7.1 Najnovšie vylepšenia
-
-1. Zjednotenie štatistík medzi StatsChart a ComparisonStats
-
-   - StatsChart teraz používa hodnoty z comparisonStats pre konzistentné zobrazenie
-   - Aktualizácia štatistík pre FIFO a Round Robin aj pri frontových požiadavkách
-
-2. Rozšírená ochranu pred chybami
-
-   - Kontrola existencie objektov a polí pred prístupom
-   - Ochrana pred spracovaním neplatných dát
-
-3. Vylepšená vizualizácia
-   - Zobrazovanie aktuálneho skóre výťahu
-   - Indikácia smeru pohybu a cieľa výťahu
-
-### 7.2 Možné vylepšenia
-
-1. Implementácia rôznych časových profilov (špička, mimošpička)
-2. Pridanie prioritných požiadaviek
-3. Optimalizácia energetickej náročnosti
-4. Implementácia prediktívneho modelu zaťaženia
-5. Pridanie možnosti nastavenia parametrov simulácie
-
-### 7.3 Limity systému
-
-1. Maximálna kapacita výťahu je obmedzená na 8 osôb
-2. Simulácia používa zjednodušený model pre čas dverí a nástup/výstup
-3. Výťahy sa pohybujú konštantnou rýchlosťou
-4. Systém nepodporuje prepravu nákladu
-
-## 8. Záver
+## 7. Záver
 
 Simulácia demonštruje efektívne využitie fuzzy logiky pre riadenie výťahového systému. Algoritmus zohľadňuje viacero faktorov pre optimalizáciu priradenia požiadaviek, čo vedie k lepšej distribúcii zaťaženia a kratším čakacím časom pre cestujúcich. Porovnanie s jednoduchšími algoritmami FIFO a Round Robin ukazuje výhody inteligentného rozhodovania pri riadení výťahov.
-
-## 9. Referencie
-
-1. React.js dokumentácia: https://reactjs.org/
-2. D3.js dokumentácia: https://d3js.org/
-3. Fuzzy Logic in Control Systems: Fuzzy Logic Controller, IEEE Transactions on Systems, Man, and Cybernetics
