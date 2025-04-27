@@ -22,6 +22,7 @@ import {
   ELEVATOR_DOOR_TIME,
   REAL_TIME_FACTOR,
 } from "./constants";
+import SimulationControls from "./components/SimulationControls";
 
 const App = () => {
   // Stav pre posledné Fuzzy rozhodnutie
@@ -799,14 +800,10 @@ const App = () => {
             totalWaitTime: newRrWaitTime,
             avgWaitTime: newRrRequests > 0 ? newRrWaitTime / newRrRequests : 0,
           },
-          // Fuzzy sa aktualizuje v processNextRequest po reálnom čakaní
         };
       });
     },
     [
-      assignElevatorFuzzy,
-      assignElevatorFIFO,
-      assignElevatorRoundRobin,
       lastAssignedRRIndex,
       elevatorsRef,
       setLastDecision,
@@ -814,18 +811,15 @@ const App = () => {
       processNextRequest,
       setLastAssignedRRIndex,
       setComparisonStats,
-      MAX_CAPACITY,
       queueMode,
       setPendingRequests,
     ]
   );
 
-  // Funkcia na zapnutie/vypnutie režimu fronty
   const toggleQueueMode = () => {
     const newMode = !queueMode;
     setQueueMode(newMode);
 
-    // Ak vypínam režim fronty (z true na false), automaticky spustím všetky požiadavky vo fronte
     if (queueMode && !newMode) {
       console.log("Vypínam frontový mód, spúšťam nahromadené požiadavky...");
       startQueuedRequests();
@@ -1220,28 +1214,13 @@ const App = () => {
                 numFloors={NUM_FLOORS}
                 onAddRequest={handleAddRequest}
               />
-              <div className="action-buttons">
-                <div className="queue-controls">
-                  <label className="queue-mode-toggle">
-                    <input
-                      type="checkbox"
-                      checked={queueMode}
-                      onChange={toggleQueueMode}
-                    />
-                    Pridávať do fronty (bez spustenia)
-                  </label>
-                  <button
-                    onClick={startQueuedRequests}
-                    disabled={pendingRequests.length === 0}
-                    className={
-                      pendingRequests.length > 0 ? "start-queue-active" : ""
-                    }
-                  >
-                    Spustiť frontu ({pendingRequests.length})
-                  </button>
-                </div>
-                <button onClick={resetSimulation}>Resetovať simuláciu</button>
-              </div>
+              <SimulationControls
+                queueMode={queueMode}
+                toggleQueueMode={toggleQueueMode}
+                pendingRequests={pendingRequests}
+                startQueuedRequests={startQueuedRequests}
+                resetSimulation={resetSimulation}
+              />
             </div>
 
             <DecisionFactors

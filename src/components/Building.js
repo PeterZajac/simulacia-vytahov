@@ -129,7 +129,7 @@ const Building = ({ numFloors, elevators = [], onCallElevator }) => {
                 }}
               >
                 <div className="floor-info">
-                  <span className="floor-number">Poschodie {floorNumber}</span>
+                  <span className="floor-number">{floorNumber}</span>
 
                   {/* Indikátor aktivity na poschodí */}
                   {hasElevator && (

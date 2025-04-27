@@ -40,7 +40,7 @@ const FloorPanel = ({ floorNumber, numFloors, onCallElevator }) => {
       <div className="floor-panel-controls">
         <div className="panel-row">
           <div className="people-control">
-            <span>Počet:</span>
+            <span>Počet osôb:</span>
             <button
               onClick={() => setPeople((p) => Math.max(1, p - 1))}
               className="counter-button"
