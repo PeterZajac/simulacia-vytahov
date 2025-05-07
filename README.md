@@ -1,5 +1,11 @@
 # Simulácia výťahového systému s fuzzy logikou
 
+Bakalárska práca
+Názov práce: SIMULÁCIA DOPRAVNÉHO SYSTÉMU S INTERAKTÍVNYM VIZUÁLNYM ROZHRANÍM
+Autor: Peter Zajac
+Škola: PEVŠ
+Rok: 2025
+
 ## Prvé spustenie
 
 1. **Naklonovanie repozitára:**
