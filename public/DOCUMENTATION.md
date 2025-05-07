@@ -1,5 +1,11 @@
 # Dokumentácia simulácie výťahového systému s fuzzy logikou
 
+Bakalárska práca
+Názov práce: SIMULÁCIA DOPRAVNÉHO SYSTÉMU S INTERAKTÍVNYM VIZUÁLNYM ROZHRANÍM
+Autor: Peter Zajac
+Škola: PEVŠ
+Rok: 2025
+
 ## 1. Úvod
 
 Tento dokument popisuje implementáciu a používanie simulácie výťahového systému s fuzzy logikou. Simulácia je navrhnutá tak, aby demonštrovala efektívne riadenie viacerých výťahov pomocou pokročilých algoritmov priradenia požiadaviek.
@@ -291,4 +297,4 @@ Alebo:
 
 ## 7. Záver
 
-Simulácia demonštruje efektívne využitie fuzzy logiky pre riadenie výťahového systému. Algoritmus zohľadňuje viacero faktorov pre optimalizáciu priradenia požiadaviek, čo vedie k lepšej distribúcii zaťaženia a kratším čakacím časom pre cestujúcich. Porovnanie s jednoduchšími algoritmami FIFO a Round Robin ukazuje výhody inteligentného rozhodovania pri riadení výťahov.
+Simulácia demonštruje efektívne využitie fuzzy logiky na základe skóre, pre riadenie výťahového systému. Algoritmus zohľadňuje viacero faktorov pre optimalizáciu priradenia požiadaviek, čo vedie k lepšej distribúcii zaťaženia a kratším čakacím časom pre cestujúcich. Porovnanie s jednoduchšími algoritmami FIFO a Round Robin ukazuje výhody inteligentného rozhodovania pri riadení výťahov.
