@@ -121,7 +121,7 @@ export function assignElevatorRoundRobin(
   const bestIndex = (lastAssignedIndex + 1) % elevators.length;
 
   // Vytvoríme správu o rozhodnutí
-  const decisionDetails = elevators.map((elevator, i) => ({
+  const decisionDetails = elevators.map((_, i) => ({
     elevatorId: i,
     selected: i === bestIndex,
   }));

@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import "./ComparisonStats.css";
 
 const ComparisonStats = ({ stats = {} }) => {
-  // Zabezpečíme, že stats a jeho vlastnosti sú vždy definované
   const safeStats = {
     fuzzy: {
       totalWaitTime: 0,
