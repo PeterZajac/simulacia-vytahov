@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import RequestForm from "./components/RequestForm";
 import Building from "./components/Building";
 import RequestList from "./components/RequestList";
@@ -217,289 +217,291 @@ const App = () => {
     });
   };
 
-  const processNextRequest = async (elevatorIndex) => {
-    console.log(
-      `[processNextRequest] Začínam spracovanie požiadavky pre výťah ${elevatorIndex}`
-    );
-
-    try {
-      const elevator = elevatorsRef.current[elevatorIndex];
-
-      if (!elevator) {
-        console.error(`[processNextRequest] Výťah ${elevatorIndex} neexistuje`);
-        return;
-      }
-
-      if (elevator.queue.length === 0) {
-        console.log(
-          `[processNextRequest] Výťah ${elevatorIndex} nemá žiadne požiadavky vo fronte`
-        );
-        return;
-      }
-
-      if (elevator.busy) {
-        console.log(
-          `[processNextRequest] Výťah ${elevatorIndex} je už zaneprázdnený, skončím`
-        );
-        return;
-      }
-
+  const processNextRequest = useCallback(
+    async (elevatorIndex) => {
       console.log(
-        `[processNextRequest] Označujem výťah ${elevatorIndex} ako zaneprázdnený`
+        `[processNextRequest] Začínam spracovanie požiadavky pre výťah ${elevatorIndex}`
       );
-      setElevators((prev) => {
-        if (!prev || !Array.isArray(prev)) {
+
+      try {
+        const elevator = elevatorsRef.current[elevatorIndex];
+
+        if (!elevator) {
           console.error(
-            "[processNextRequest] prev nie je pole, vytváram nové pole"
+            `[processNextRequest] Výťah ${elevatorIndex} neexistuje`
           );
-          return [...elevatorsRef.current];
+          return;
         }
 
-        const newElevators = [...prev];
-        if (newElevators[elevatorIndex]) {
+        if (elevator.queue.length === 0) {
+          console.log(
+            `[processNextRequest] Výťah ${elevatorIndex} nemá žiadne požiadavky vo fronte`
+          );
+          return;
+        }
+
+        if (elevator.busy) {
+          console.log(
+            `[processNextRequest] Výťah ${elevatorIndex} je už zaneprázdnený, skončím`
+          );
+          return;
+        }
+
+        console.log(
+          `[processNextRequest] Označujem výťah ${elevatorIndex} ako zaneprázdnený`
+        );
+        setElevators((prev) => {
+          if (!prev || !Array.isArray(prev)) {
+            console.error(
+              "[processNextRequest] prev nie je pole, vytváram nové pole"
+            );
+            return [...elevatorsRef.current];
+          }
+
+          const newElevators = [...prev];
+          if (newElevators[elevatorIndex]) {
+            newElevators[elevatorIndex] = {
+              ...newElevators[elevatorIndex],
+              busy: true,
+            };
+          }
+          return newElevators;
+        });
+
+        await sleep(50);
+
+        const currentRequest = elevator.queue[0];
+        console.log(
+          `[processNextRequest] Spracovávam požiadavku:`,
+          currentRequest
+        );
+
+        const startTime = currentRequest.timestamp || Date.now() - 5000;
+        const pickupTime = Date.now();
+
+        const actualWaitTime =
+          ((pickupTime - startTime) / 1000) * REAL_TIME_FACTOR;
+
+        const waitTimeForStats = Math.max(actualWaitTime, 0.2);
+
+        console.log(
+          `[processNextRequest] Výťah ${elevatorIndex} - reálny čas čakania: ${waitTimeForStats.toFixed(
+            2
+          )}s`
+        );
+
+        console.log(
+          `[processNextRequest] Pohyb výťahu ${elevatorIndex} na poschodie ${currentRequest.from}`
+        );
+        await animateElevatorMovement(elevatorIndex, currentRequest.from);
+
+        console.log(
+          `[processNextRequest] Simulácia nastupovania na poschodí ${currentRequest.from}`
+        );
+        await sleep(ELEVATOR_DOOR_TIME * 300);
+
+        console.log(
+          `[processNextRequest] Pohyb výťahu ${elevatorIndex} na cieľové poschodie ${currentRequest.to}`
+        );
+        await animateElevatorMovement(elevatorIndex, currentRequest.to);
+
+        console.log(
+          `[processNextRequest] Simulácia vystupovania na poschodí ${currentRequest.to}`
+        );
+        await sleep(ELEVATOR_DOOR_TIME * 300);
+
+        const finishTime = Date.now();
+        console.log(
+          `[processNextRequest] Dokončenie obsluhy požiadavky pre výťah ${elevatorIndex}`
+        );
+
+        setElevators((prev) => {
+          if (!prev || !Array.isArray(prev)) {
+            console.error(
+              "[processNextRequest] prev nie je pole pri aktualizácii štatistík, vytváram nové pole"
+            );
+            return [...elevatorsRef.current];
+          }
+
+          const newElevators = [...prev];
+
+          if (!newElevators[elevatorIndex]) {
+            console.error(
+              `[processNextRequest] Výťah na indexe ${elevatorIndex} neexistuje`
+            );
+            return newElevators;
+          }
+
+          const currentElevator = newElevators[elevatorIndex];
+
+          if (
+            !Array.isArray(currentElevator.queue) ||
+            currentElevator.queue.length === 0
+          ) {
+            console.error(
+              `[processNextRequest] Výťah ${elevatorIndex} nemá platnú frontu`
+            );
+            return newElevators;
+          }
+
+          const updatedQueue = currentElevator.queue.slice(1);
+          const newTotalRequests = currentElevator.stats + 1;
+
+          const fromDist = Math.abs(
+            currentRequest.from - currentElevator.currentFloor
+          );
+          const toDist = Math.abs(currentRequest.to - currentRequest.from);
+          const totalDist = fromDist + toDist;
+
+          const expectedTravelTime =
+            (totalDist * FLOOR_HEIGHT) / ELEVATOR_SPEED +
+            2 * ELEVATOR_DOOR_TIME;
+
+          const realTravelTime = expectedTravelTime * REAL_TIME_FACTOR;
+
+          const newTotalWaitTime =
+            (currentElevator.totalWaitTime || 0) + realTravelTime;
+          const newAvgWaitTime = newTotalWaitTime / newTotalRequests;
+          const newTotalPassengers =
+            (currentElevator.totalPassengers || 0) + currentRequest.people;
+
           newElevators[elevatorIndex] = {
-            ...newElevators[elevatorIndex],
-            busy: true,
+            ...currentElevator,
+            queue: updatedQueue,
+            busy: false,
+            stats: newTotalRequests,
+            totalWaitTime: newTotalWaitTime,
+            avgWaitTime: newAvgWaitTime,
+            lastRequestTime: finishTime,
+            totalPassengers: newTotalPassengers,
+            currentScore: 0,
           };
-        }
-        return newElevators;
-      });
 
-      await sleep(50);
+          const newElevatorsRef = [...newElevators];
+          elevatorsRef.current = newElevatorsRef;
 
-      const currentRequest = elevator.queue[0];
-      console.log(
-        `[processNextRequest] Spracovávam požiadavku:`,
-        currentRequest
-      );
-
-      const startTime = currentRequest.timestamp || Date.now() - 5000;
-      const pickupTime = Date.now();
-
-      const actualWaitTime =
-        ((pickupTime - startTime) / 1000) * REAL_TIME_FACTOR;
-
-      const waitTimeForStats = Math.max(actualWaitTime, 0.2);
-
-      console.log(
-        `[processNextRequest] Výťah ${elevatorIndex} - reálny čas čakania: ${waitTimeForStats.toFixed(
-          2
-        )}s`
-      );
-
-      console.log(
-        `[processNextRequest] Pohyb výťahu ${elevatorIndex} na poschodie ${currentRequest.from}`
-      );
-      await animateElevatorMovement(elevatorIndex, currentRequest.from);
-
-      console.log(
-        `[processNextRequest] Simulácia nastupovania na poschodí ${currentRequest.from}`
-      );
-      await sleep(ELEVATOR_DOOR_TIME * 300);
-
-      console.log(
-        `[processNextRequest] Pohyb výťahu ${elevatorIndex} na cieľové poschodie ${currentRequest.to}`
-      );
-      await animateElevatorMovement(elevatorIndex, currentRequest.to);
-
-      console.log(
-        `[processNextRequest] Simulácia vystupovania na poschodí ${currentRequest.to}`
-      );
-      await sleep(ELEVATOR_DOOR_TIME * 300);
-
-      const finishTime = Date.now();
-      console.log(
-        `[processNextRequest] Dokončenie obsluhy požiadavky pre výťah ${elevatorIndex}`
-      );
-
-      setElevators((prev) => {
-        if (!prev || !Array.isArray(prev)) {
-          console.error(
-            "[processNextRequest] prev nie je pole pri aktualizácii štatistík, vytváram nové pole"
+          const totalSystemRequests = newElevators.reduce(
+            (sum, el) =>
+              sum + (el && typeof el.stats === "number" ? el.stats : 0),
+            0
           );
-          return [...elevatorsRef.current];
-        }
-
-        const newElevators = [...prev];
-
-        if (!newElevators[elevatorIndex]) {
-          console.error(
-            `[processNextRequest] Výťah na indexe ${elevatorIndex} neexistuje`
+          const totalSystemWaitTime = newElevators.reduce(
+            (sum, el) =>
+              sum +
+              (el && typeof el.totalWaitTime === "number"
+                ? el.totalWaitTime
+                : 0),
+            0
           );
-          return newElevators;
-        }
 
-        const currentElevator = newElevators[elevatorIndex];
+          setTimeout(() => {
+            setComparisonStats((prevStats) => {
+              if (!prevStats) {
+                prevStats = {
+                  fuzzy: { totalWaitTime: 0, totalRequests: 0, avgWaitTime: 0 },
+                  fifo: { totalWaitTime: 0, totalRequests: 0, avgWaitTime: 0 },
+                  roundRobin: {
+                    totalWaitTime: 0,
+                    totalRequests: 0,
+                    avgWaitTime: 0,
+                  },
+                };
+              }
 
-        if (
-          !Array.isArray(currentElevator.queue) ||
-          currentElevator.queue.length === 0
-        ) {
-          console.error(
-            `[processNextRequest] Výťah ${elevatorIndex} nemá platnú frontu`
-          );
-          return newElevators;
-        }
-
-        const updatedQueue = currentElevator.queue.slice(1);
-        const newTotalRequests = currentElevator.stats + 1;
-
-        const fromDist = Math.abs(
-          currentRequest.from - currentElevator.currentFloor
-        );
-        const toDist = Math.abs(currentRequest.to - currentRequest.from);
-        const totalDist = fromDist + toDist;
-
-        const expectedTravelTime =
-          (totalDist * FLOOR_HEIGHT) / ELEVATOR_SPEED + 2 * ELEVATOR_DOOR_TIME;
-
-        const realTravelTime = expectedTravelTime * REAL_TIME_FACTOR;
-
-        const newTotalWaitTime =
-          (currentElevator.totalWaitTime || 0) + realTravelTime;
-        const newAvgWaitTime = newTotalWaitTime / newTotalRequests;
-        const newTotalPassengers =
-          (currentElevator.totalPassengers || 0) + currentRequest.people;
-
-        newElevators[elevatorIndex] = {
-          ...currentElevator,
-          queue: updatedQueue,
-          busy: false,
-          stats: newTotalRequests,
-          totalWaitTime: newTotalWaitTime,
-          avgWaitTime: newAvgWaitTime,
-          lastRequestTime: finishTime,
-          totalPassengers: newTotalPassengers,
-          currentScore: 0,
-        };
-
-        const newElevatorsRef = [...newElevators];
-        elevatorsRef.current = newElevatorsRef;
-
-        const totalSystemRequests = newElevators.reduce(
-          (sum, el) =>
-            sum + (el && typeof el.stats === "number" ? el.stats : 0),
-          0
-        );
-        const totalSystemWaitTime = newElevators.reduce(
-          (sum, el) =>
-            sum +
-            (el && typeof el.totalWaitTime === "number" ? el.totalWaitTime : 0),
-          0
-        );
-        const totalSystemPassengers = newElevators.reduce(
-          (sum, el) =>
-            sum +
-            (el && typeof el.totalPassengers === "number"
-              ? el.totalPassengers
-              : 0),
-          0
-        );
-        const totalSystemDistance = newElevators.reduce(
-          (sum, el) =>
-            sum +
-            (el && typeof el.totalTravelDistance === "number"
-              ? el.totalTravelDistance
-              : 0),
-          0
-        );
-
-        setTimeout(() => {
-          setComparisonStats((prevStats) => {
-            if (!prevStats) {
-              prevStats = {
-                fuzzy: { totalWaitTime: 0, totalRequests: 0, avgWaitTime: 0 },
-                fifo: { totalWaitTime: 0, totalRequests: 0, avgWaitTime: 0 },
+              const safePrevStats = {
+                fuzzy: {
+                  totalWaitTime: 0,
+                  totalRequests: 0,
+                  avgWaitTime: 0,
+                  ...(prevStats.fuzzy || {}),
+                },
+                fifo: {
+                  totalWaitTime: 0,
+                  totalRequests: 0,
+                  avgWaitTime: 0,
+                  ...(prevStats.fifo || {}),
+                },
                 roundRobin: {
                   totalWaitTime: 0,
                   totalRequests: 0,
                   avgWaitTime: 0,
+                  ...(prevStats.roundRobin || {}),
                 },
               };
+
+              return {
+                ...safePrevStats,
+                fuzzy: {
+                  totalRequests: totalSystemRequests,
+                  totalWaitTime: totalSystemWaitTime,
+                  avgWaitTime:
+                    totalSystemRequests > 0
+                      ? totalSystemWaitTime / totalSystemRequests
+                      : 0,
+                },
+              };
+            });
+          }, 0);
+
+          return newElevators;
+        });
+
+        setTimeout(() => {
+          if (
+            elevatorsRef.current &&
+            elevatorIndex !== undefined &&
+            elevatorIndex >= 0 &&
+            elevatorIndex < elevatorsRef.current.length &&
+            elevatorsRef.current[elevatorIndex] &&
+            elevatorsRef.current[elevatorIndex].queue
+          ) {
+            if (elevatorsRef.current[elevatorIndex].queue.length > 0) {
+              console.log(
+                `[processNextRequest] Výťah ${elevatorIndex} má ďalšie požiadavky, pokračujem`
+              );
+              processNextRequest(elevatorIndex);
+            } else {
+              console.log(
+                `[processNextRequest] Výťah ${elevatorIndex} nemá ďalšie požiadavky, končím`
+              );
             }
-
-            const safePrevStats = {
-              fuzzy: {
-                totalWaitTime: 0,
-                totalRequests: 0,
-                avgWaitTime: 0,
-                ...(prevStats.fuzzy || {}),
-              },
-              fifo: {
-                totalWaitTime: 0,
-                totalRequests: 0,
-                avgWaitTime: 0,
-                ...(prevStats.fifo || {}),
-              },
-              roundRobin: {
-                totalWaitTime: 0,
-                totalRequests: 0,
-                avgWaitTime: 0,
-                ...(prevStats.roundRobin || {}),
-              },
-            };
-
-            return {
-              ...safePrevStats,
-              fuzzy: {
-                totalRequests: totalSystemRequests,
-                totalWaitTime: totalSystemWaitTime,
-                avgWaitTime:
-                  totalSystemRequests > 0
-                    ? totalSystemWaitTime / totalSystemRequests
-                    : 0,
-              },
-            };
-          });
-        }, 0);
-
-        return newElevators;
-      });
-
-      setTimeout(() => {
-        if (
-          elevatorsRef.current &&
-          elevatorIndex !== undefined &&
-          elevatorIndex >= 0 &&
-          elevatorIndex < elevatorsRef.current.length &&
-          elevatorsRef.current[elevatorIndex] &&
-          elevatorsRef.current[elevatorIndex].queue
-        ) {
-          if (elevatorsRef.current[elevatorIndex].queue.length > 0) {
-            console.log(
-              `[processNextRequest] Výťah ${elevatorIndex} má ďalšie požiadavky, pokračujem`
-            );
-            processNextRequest(elevatorIndex);
           } else {
-            console.log(
-              `[processNextRequest] Výťah ${elevatorIndex} nemá ďalšie požiadavky, končím`
+            console.error(
+              `[processNextRequest] Neplatný výťah alebo fronta pre index ${elevatorIndex}`
             );
           }
-        } else {
-          console.error(
-            `[processNextRequest] Neplatný výťah alebo fronta pre index ${elevatorIndex}`
-          );
-        }
-      }, 200);
-    } catch (error) {
-      console.error(
-        `[processNextRequest] Chyba pri spracovaní požiadavky pre výťah ${elevatorIndex}:`,
-        error
-      );
+        }, 200);
+      } catch (error) {
+        console.error(
+          `[processNextRequest] Chyba pri spracovaní požiadavky pre výťah ${elevatorIndex}:`,
+          error
+        );
 
-      setElevators((prev) => {
-        const newElevators = [...prev];
-        if (newElevators[elevatorIndex]) {
-          newElevators[elevatorIndex] = {
-            ...newElevators[elevatorIndex],
-            busy: false,
-          };
-          elevatorsRef.current[elevatorIndex] = newElevators[elevatorIndex];
-        }
-        return newElevators;
-      });
-    }
-  };
+        setElevators((prev) => {
+          const newElevators = [...prev];
+          if (newElevators[elevatorIndex]) {
+            newElevators[elevatorIndex] = {
+              ...newElevators[elevatorIndex],
+              busy: false,
+            };
+            elevatorsRef.current[elevatorIndex] = newElevators[elevatorIndex];
+          }
+          return newElevators;
+        });
+      }
+    },
+    [
+      setElevators,
+      elevatorsRef,
+      setComparisonStats,
+      sleep,
+      animateElevatorMovement,
+      ELEVATOR_DOOR_TIME,
+      FLOOR_HEIGHT,
+      ELEVATOR_SPEED,
+      REAL_TIME_FACTOR,
+    ]
+  );
 
   const handleAddRequest = useCallback(
     (from, to, people) => {

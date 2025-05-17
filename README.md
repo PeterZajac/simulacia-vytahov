@@ -10,7 +10,7 @@ Rok: 2025
 
 1. **Naklonovanie repozitára:**
    ```bash
-   git clone https://github.com/PeterZajac/simulacia-vytahov2.git
+   git clone https://github.com/PeterZajac/simulacia-vytahov.git
    cd simulacia-vytahov2
    ```
 
